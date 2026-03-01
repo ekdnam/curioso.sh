@@ -7,3 +7,6 @@ export const progressiveLoading = true; // true = skeleton-first progressive loa
 export const prefetchAhead = 2; // number of weeks to fetch in parallel during cascade
 
 export const infiniteScroll = true; // true = generate weeks beyond 10 on scroll
+
+export const prefetchRecommendations = true; // true = proactively prefetch upcoming weeks
+export const prefetchCount = 2; // how many weeks to keep buffered ahead of consumption frontier

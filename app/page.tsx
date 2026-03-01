@@ -3,10 +3,11 @@
 import { CourseForm } from "@/components/CourseForm";
 import { CourseView } from "@/components/CourseView";
 import { LoadingState } from "@/components/LoadingState";
-import { progressiveLoading, infiniteScroll as infiniteScrollEnabled } from "@/lib/config";
+import { progressiveLoading, infiniteScroll as infiniteScrollEnabled, prefetchRecommendations, prefetchCount } from "@/lib/config";
 import { useGenerateCourse } from "@/hooks/useGenerateCourse";
 import { useProgressiveCourse } from "@/hooks/useProgressiveCourse";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { usePrefetchPipeline } from "@/hooks/usePrefetchPipeline";
 
 function useHook() {
   const legacy = useGenerateCourse();
@@ -24,15 +25,26 @@ export default function HomePage() {
 
   const course = state.status === "success" ? state.course : null;
 
+  const prefetchPipeline = usePrefetchPipeline({
+    enabled: prefetchRecommendations && infiniteScrollEnabled && initialLoadComplete && !!appendWeek,
+    course,
+    appendWeek: appendWeek ?? (() => {}),
+    updateWeek: updateWeek ?? (() => {}),
+    setWeekStatus: setWeekStatus ?? (() => {}),
+    prefetchCount,
+  });
+
   const infiniteScrollState = useInfiniteScroll({
     enabled: infiniteScrollEnabled && initialLoadComplete && !!appendWeek,
     course,
     appendWeek: appendWeek ?? (() => {}),
     updateWeek: updateWeek ?? (() => {}),
     setWeekStatus: setWeekStatus ?? (() => {}),
+    onWeekConsumed: prefetchPipeline.consumeWeek,
   });
 
   const handleReset = () => {
+    prefetchPipeline.cancel();
     infiniteScrollState.cancel();
     reset();
   };
