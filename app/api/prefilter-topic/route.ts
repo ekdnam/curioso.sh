@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
 import { logger } from "@/lib/logger";
+import { timedGenerate } from "@/lib/timedGenerate";
 import { SchemaType, type Schema } from "@google/generative-ai";
 
 const PREFILTER_SCHEMA: Schema = {
@@ -59,7 +60,9 @@ Examples:
 - "uhhhh idk lol" → { sensible: false, refinedTopic: "Introduction to Psychology", wasRefined: true }
 - "organic chemistry" → { sensible: true, refinedTopic: "Organic Chemistry", wasRefined: false }`;
 
-    const result = await model.generateContent(prompt);
+    const result = await timedGenerate("prefilter-topic", () =>
+      model.generateContent(prompt)
+    );
     const parsed = JSON.parse(result.response.text());
 
     logger.info(

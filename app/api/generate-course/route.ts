@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
 import { logger } from "@/lib/logger";
+import { timedGenerate } from "@/lib/timedGenerate";
 import { deepDiveMode } from "@/lib/config";
 import { Level } from "@/types/course";
 import { SchemaType, type Schema } from "@google/generative-ai";
@@ -163,7 +164,9 @@ ${CONTENT_GUIDELINES}
 For prerequisites: reference specific prior weeks by name.`;
 
       logger.info("generate-course", `Gemini call starting for weeks ${weekStart}-${weekEnd}`);
-      const result = await model.generateContent(prompt);
+      const result = await timedGenerate("generate-course:chunk", () =>
+        model.generateContent(prompt)
+      );
       const text = result.response.text();
 
       logger.info("generate-course", `Weeks ${weekStart}-${weekEnd} received`);
@@ -194,7 +197,9 @@ For prerequisites of week 1: list background knowledge.
 For prerequisites of subsequent weeks: reference specific prior weeks by name.`;
 
       logger.info("generate-course", "Gemini call starting (single-shot: all weeks)");
-      const result = await model.generateContent(prompt);
+      const result = await timedGenerate("generate-course:all-weeks", () =>
+        model.generateContent(prompt)
+      );
       const text = result.response.text();
 
       logger.info("generate-course", "Single-shot response received");
@@ -224,7 +229,9 @@ For prerequisites of week 1: list background knowledge.
 For prerequisites of week 2: reference week 1 by name.`;
 
     logger.info("generate-course", "Gemini call starting (initial chunk: weeks 1-2)");
-    const result = await model.generateContent(prompt);
+    const result = await timedGenerate("generate-course:initial", () =>
+      model.generateContent(prompt)
+    );
     const text = result.response.text();
 
     logger.info("generate-course", "Initial chunk received");

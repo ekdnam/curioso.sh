@@ -1,4 +1,5 @@
 import { logger } from "@/lib/logger";
+import { timedGenerate } from "@/lib/timedGenerate";
 
 const MAX_RETRIES = 3;
 const BASE_DELAY_MS = 1000;
@@ -9,7 +10,7 @@ export async function geminiRetry<T>(
 ): Promise<T> {
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      return await fn();
+      return await timedGenerate(tag, fn);
     } catch (err) {
       if (attempt === MAX_RETRIES) throw err;
       const delay = BASE_DELAY_MS * 2 ** attempt;
