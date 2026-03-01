@@ -3,16 +3,18 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { DeepDive, DeepDiveSummary } from "@/types/course";
+import { DeepDive, DeepDiveSummary, GlossaryEntry } from "@/types/course";
+import { HighlightedText } from "./HighlightedText";
 
 interface Props {
   deepDive: DeepDiveSummary | null;
   onClose: () => void;
   contentOverride?: string | null;
   loading?: boolean;
+  glossary?: GlossaryEntry[];
 }
 
-export function DeepDiveDrawer({ deepDive, onClose, contentOverride, loading }: Props) {
+export function DeepDiveDrawer({ deepDive, onClose, contentOverride, loading, glossary }: Props) {
   useEffect(() => {
     if (!deepDive) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -84,7 +86,10 @@ export function DeepDiveDrawer({ deepDive, onClose, contentOverride, loading }: 
                 </div>
               ) : (
                 <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                  {contentOverride !== undefined ? contentOverride : (deepDive as DeepDive).content}
+                  <HighlightedText
+                    text={contentOverride !== undefined ? contentOverride ?? "" : (deepDive as DeepDive).content}
+                    glossary={glossary ?? []}
+                  />
                 </div>
               )}
             </div>

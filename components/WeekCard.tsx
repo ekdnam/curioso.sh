@@ -228,6 +228,7 @@ export const WeekCard = memo(function WeekCard({ week, prevWeek, nextWeek, isAct
         onClose={() => setOpenDive(null)}
         contentOverride={drawerContent}
         loading={deepDiveMode === "bundled" && contentLoading}
+        glossary={glossary}
       />
     </div>
   );
