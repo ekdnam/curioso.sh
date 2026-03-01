@@ -1,8 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { LoadingStage } from "@/hooks/useGenerateCourse";
 
-export function LoadingState() {
+interface Props {
+  stage: LoadingStage;
+  topic: string;
+}
+
+const STAGE_LABELS: Record<LoadingStage, string> = {
+  refining: "Understanding your topic",
+  "generating-weeks-1-2": "Generating first weeks",
+  "generating-remaining": "Building remaining curriculum",
+};
+
+export function LoadingState({ stage, topic }: Props) {
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
@@ -12,10 +24,10 @@ export function LoadingState() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-8 px-6 bg-white">
-      <div className="text-center space-y-1">
-        <p className="text-blue-600 text-sm font-medium">Building your course&hellip;</p>
-        <h2 className="text-xl font-bold text-gray-900">Generating curriculum</h2>
-        <p className="text-gray-500 text-sm">This usually takes 10–20 seconds · {elapsed}s elapsed</p>
+      <div className="text-center space-y-2">
+        <h2 className="text-xl font-bold text-gray-900">{topic}</h2>
+        <p className="text-blue-600 text-sm font-medium">{STAGE_LABELS[stage]}&hellip;</p>
+        <p className="text-gray-400 text-xs">{elapsed}s elapsed</p>
       </div>
 
       <div className="w-full max-w-lg space-y-3">

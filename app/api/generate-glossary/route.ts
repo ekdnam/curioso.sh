@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
 import { logger } from "@/lib/logger";
+import { geminiRetry } from "@/lib/geminiRetry";
+import { getCached, setCache } from "@/lib/cache";
 import { SchemaType, type Schema } from "@google/generative-ai";
 
 const GLOSSARY_SCHEMA: Schema = {
@@ -23,15 +25,28 @@ const GLOSSARY_SCHEMA: Schema = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { lectureNotes } = (await req.json()) as { lectureNotes: string };
+    const { lectureNotes, weekNumber, topic } = (await req.json()) as {
+      lectureNotes: string;
+      weekNumber?: number;
+      topic?: string;
+    };
 
-    logger.info("generate-glossary", `Request received — lectureNotes length=${lectureNotes?.length ?? 0}`);
+    logger.info("generate-glossary", `Request received — week=${weekNumber ?? "?"}, lectureNotes length=${lectureNotes?.length ?? 0}`);
 
     if (!lectureNotes) {
       return NextResponse.json(
         { error: "lectureNotes is required" },
         { status: 400 }
       );
+    }
+
+    if (topic) {
+      const cached = getCached<{ terms: { term: string; definition: string }[] }>(
+        "glossary", topic, `week-${weekNumber ?? 0}`
+      );
+      if (cached) {
+        return NextResponse.json(cached.terms);
+      }
     }
 
     const model = genAI.getGenerativeModel({
@@ -58,12 +73,19 @@ Do NOT include:
 Lecture notes:
 ${lectureNotes}`;
 
-    logger.info("generate-glossary", "Gemini call starting");
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
-    const parsed = JSON.parse(text);
+    logger.info("generate-glossary", `Gemini call starting — week=${weekNumber ?? "?"}`);
 
-    logger.info("generate-glossary", `Terms extracted: ${parsed.terms.length}`);
+    const parsed = await geminiRetry("generate-glossary", async () => {
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+      return JSON.parse(text);
+    });
+
+    if (topic) {
+      setCache("glossary", topic, `week-${weekNumber ?? 0}`, parsed);
+    }
+
+    logger.info("generate-glossary", `week=${weekNumber ?? "?"} — ${parsed.terms.length} terms extracted`);
     return NextResponse.json(parsed.terms);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unknown error";

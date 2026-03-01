@@ -9,7 +9,7 @@ export default function HomePage() {
   const { state, generate, reset } = useGenerateCourse();
 
   if (state.status === "loading") {
-    return <LoadingState />;
+    return <LoadingState stage={state.stage} topic={state.topic} />;
   }
 
   if (state.status === "success") {

@@ -18,9 +18,12 @@ export interface Week {
   requiredReading: Reading[];
 }
 
-export interface DeepDive {
+export interface DeepDiveSummary {
   title: string;
   summary: string;
+}
+
+export interface DeepDive extends DeepDiveSummary {
   content: string;
 }
 
@@ -31,8 +34,8 @@ export interface GlossaryEntry {
 
 export interface Course {
   courseName: string;
-  courseCode: string;
   description: string;
-  instructor: string;
+  topic: string;
+  level: Level;
   weeks: Week[];
 }

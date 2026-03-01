@@ -15,10 +15,8 @@ interface Props {
 
 export function CourseView({ course, onReset }: Props) {
   const { activeIndex, setRef } = useActiveWeek(course.weeks.length);
-  const activeWeekNumber = course.weeks[activeIndex]?.weekNumber ?? 1;
-
-  const glossary = useGlossary(course.weeks, activeWeekNumber);
-  const deepDives = useDeepDives(course.weeks, activeWeekNumber);
+  const glossary = useGlossary(course.weeks, course.topic);
+  const deepDives = useDeepDives(course.weeks, course.topic);
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">
@@ -29,6 +27,7 @@ export function CourseView({ course, onReset }: Props) {
         deepDives={deepDives}
         activeIndex={activeIndex}
         setRef={setRef}
+        topic={course.topic}
       />
       <ExportPDFButton course={course} />
     </div>

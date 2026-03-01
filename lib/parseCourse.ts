@@ -6,7 +6,7 @@ export function parseCourse(raw: string): Course {
   try {
     const data = JSON.parse(raw);
 
-    if (!data.courseName || !data.courseCode || !data.description || !data.instructor) {
+    if (!data.courseName || !data.description) {
       throw new Error("Invalid course structure: missing top-level fields");
     }
     if (!Array.isArray(data.weeks) || data.weeks.length === 0) {
