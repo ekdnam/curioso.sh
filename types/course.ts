@@ -17,6 +17,7 @@ export interface Week {
   lectureNotes: string;
   requiredReading: Reading[];
   deepDives?: DeepDiveSummary[];
+  glossary?: GlossaryEntry[];
 }
 
 export interface DeepDiveSummary {

@@ -1,9 +1,9 @@
 "use client";
 
-import { Course } from "@/types/course";
+import { useMemo } from "react";
+import { Course, GlossaryEntry } from "@/types/course";
 import { CourseHeader } from "./CourseHeader";
 import { WeekDeck } from "./WeekDeck";
-import { useGlossary } from "@/hooks/useGlossary";
 import { useDeepDives } from "@/hooks/useDeepDives";
 import { useActiveWeek } from "@/hooks/useActiveWeek";
 import { ExportPDFButton } from "./ExportPDFButton";
@@ -16,7 +16,15 @@ interface Props {
 
 export function CourseView({ course, onReset }: Props) {
   const { activeIndex, setRef } = useActiveWeek(course.weeks.length);
-  const glossary = useGlossary(course.weeks, course.topic);
+  const glossary = useMemo(() => {
+    const record: Record<number, GlossaryEntry[]> = {};
+    for (const week of course.weeks) {
+      if (week.glossary) {
+        record[week.weekNumber] = week.glossary;
+      }
+    }
+    return record;
+  }, [course.weeks]);
   const fetchedDeepDives = useDeepDives(
     deepDiveMode === "separate" ? course.weeks : [],
     course.topic

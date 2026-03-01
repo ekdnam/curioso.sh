@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Course, Level, Week } from "@/types/course";
+import { Course, GlossaryEntry, Level, Week } from "@/types/course";
 import { logger } from "@/lib/logger";
 import { parseCourse } from "@/lib/parseCourse";
 
@@ -36,6 +36,7 @@ function clearCourse() {
 export type LoadingStage =
   | "refining"
   | "generating-weeks-1-2"
+  | "generating-glossary"
   | "generating-remaining";
 
 type State =
@@ -52,6 +53,39 @@ function getInitialState(): State {
     return { status: "success", course: saved };
   }
   return { status: "idle" };
+}
+
+async function fetchGlossary(
+  weeks: Week[],
+  topic: string,
+  signal: AbortSignal
+): Promise<Week[]> {
+  const results = await Promise.all(
+    weeks.map(async (week) => {
+      if (!week.lectureNotes) return week;
+      try {
+        const res = await fetch("/api/generate-glossary", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lectureNotes: week.lectureNotes,
+            weekNumber: week.weekNumber,
+            topic,
+          }),
+          signal,
+        });
+        if (!res.ok) return week;
+        const terms: GlossaryEntry[] = await res.json();
+        logger.info("fetchGlossary", `Glossary loaded for week ${week.weekNumber} (${terms.length} terms)`);
+        return { ...week, glossary: terms };
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") throw e;
+        logger.error("fetchGlossary", `Error fetching glossary for week ${week.weekNumber}`);
+        return week;
+      }
+    })
+  );
+  return results;
 }
 
 export function useGenerateCourse() {
@@ -116,6 +150,10 @@ export function useGenerateCourse() {
       course.level = level;
       logger.info("useGenerateCourse", `Initial chunk received — ${course.weeks.length} weeks`);
 
+      // Generate glossary for initial weeks before rendering
+      setState({ status: "loading", stage: "generating-glossary", topic: resolvedTopic });
+      course.weeks = await fetchGlossary(course.weeks, resolvedTopic, controller.signal);
+
       // Show the course immediately with what we have
       setState({ status: "success", course, loading: true });
 
@@ -159,11 +197,16 @@ export function useGenerateCourse() {
         }
       });
 
-      // Wait for all chunks concurrently, then merge in one update
+      // Wait for all chunks concurrently, then fetch glossary and merge
       const results = await Promise.allSettled(chunkPromises);
-      const allNewWeeks = results.flatMap((r) =>
+      let allNewWeeks = results.flatMap((r) =>
         r.status === "fulfilled" ? r.value : []
       );
+
+      // Generate glossary for remaining weeks
+      if (allNewWeeks.length > 0) {
+        allNewWeeks = await fetchGlossary(allNewWeeks, resolvedTopic, controller.signal);
+      }
 
       setState((prev) => {
         if (prev.status !== "success") return prev;
