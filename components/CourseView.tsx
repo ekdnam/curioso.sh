@@ -13,10 +13,16 @@ import { logger } from "@/lib/logger";
 interface Props {
   course: Course;
   onReset: () => void;
+  weekStatus?: Record<number, "skeleton" | "loading" | "loaded">;
+  onRequestWeek?: (weekNum: number) => void;
 }
 
-export function CourseView({ course, onReset }: Props) {
-  const { activeIndex, setRef } = useActiveWeek(course.weeks.length);
+export function CourseView({ course, onReset, weekStatus, onRequestWeek }: Props) {
+  // Count loaded weeks so the IntersectionObserver re-attaches when skeleton→loaded swaps DOM elements
+  const loadedCount = weekStatus
+    ? Object.values(weekStatus).filter(s => s === "loaded").length
+    : course.weeks.length;
+  const { activeIndex, setRef } = useActiveWeek(course.weeks.length, loadedCount);
 
   // Seed glossary from course.weeks (updated when weeks change)
   const baseGlossary = useMemo(() => {
@@ -95,6 +101,15 @@ export function CourseView({ course, onReset }: Props) {
     }
   }, [deepDives, mergeDeepDiveGlossary]);
 
+  // Scroll-triggered priority fetch: when the user scrolls to an unloaded week, request it
+  useEffect(() => {
+    if (!weekStatus || !onRequestWeek) return;
+    const week = course.weeks[activeIndex];
+    if (week && weekStatus[week.weekNumber] === "skeleton") {
+      onRequestWeek(week.weekNumber);
+    }
+  }, [activeIndex, weekStatus, onRequestWeek, course.weeks]);
+
   return (
     <div className="flex flex-col h-screen overflow-hidden">
       <CourseHeader course={course} onReset={onReset} />
@@ -105,8 +120,12 @@ export function CourseView({ course, onReset }: Props) {
         activeIndex={activeIndex}
         setRef={setRef}
         topic={course.topic}
+        weekStatus={weekStatus}
       />
-      <ExportPDFButton course={course} />
+      <ExportPDFButton
+        course={course}
+        disabled={weekStatus ? Object.values(weekStatus).some(s => s !== "loaded") : false}
+      />
     </div>
   );
 }

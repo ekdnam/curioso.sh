@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export function useActiveWeek(count: number) {
+export function useActiveWeek(count: number, reobserveKey?: number) {
   const [activeIndex, setActiveIndex] = useState(0);
   const refs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -24,7 +24,7 @@ export function useActiveWeek(count: number) {
     });
 
     return () => observer.disconnect();
-  }, [count]);
+  }, [count, reobserveKey]);
 
   const setRef = useCallback(
     (i: number) => (el: HTMLDivElement | null) => {
