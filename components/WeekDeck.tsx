@@ -1,15 +1,17 @@
 "use client";
 
 import { useRef } from "react";
-import { Week } from "@/types/course";
+import { Week, GlossaryEntry, DeepDive } from "@/types/course";
 import { WeekCard } from "./WeekCard";
 import { useActiveWeek } from "@/hooks/useActiveWeek";
 
 interface Props {
   weeks: Week[];
+  glossary: Record<number, GlossaryEntry[]>;
+  deepDives: Record<number, DeepDive[]>;
 }
 
-export function WeekDeck({ weeks }: Props) {
+export function WeekDeck({ weeks, glossary, deepDives }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { activeIndex, setRef } = useActiveWeek(weeks.length);
 
@@ -30,6 +32,8 @@ export function WeekDeck({ weeks }: Props) {
           nextWeek={weeks[i + 1]}
           isActive={i === activeIndex}
           cardRef={setRef(i)}
+          glossary={glossary[week.weekNumber] ?? []}
+          deepDives={deepDives[week.weekNumber] ?? null}
         />
       ))}
     </div>

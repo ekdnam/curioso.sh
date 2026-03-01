@@ -1,7 +1,10 @@
 "use client";
 
+import { useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "framer-motion";
-import { Week, Reading } from "@/types/course";
+import { Week, Reading, GlossaryEntry, DeepDive } from "@/types/course";
+import { DeepDiveDrawer } from "./DeepDiveDrawer";
 
 interface Props {
   week: Week;
@@ -9,6 +12,8 @@ interface Props {
   nextWeek?: Week;
   isActive: boolean;
   cardRef: (el: HTMLDivElement | null) => void;
+  glossary: GlossaryEntry[];
+  deepDives: DeepDive[] | null;
 }
 
 const READING_BADGE: Record<string, string> = {
@@ -17,6 +22,65 @@ const READING_BADGE: Record<string, string> = {
   article: "bg-orange-100 text-orange-700",
   chapter: "bg-purple-100 text-purple-700",
 };
+
+function GlossaryTooltip({ term, definition, children }: { term: string; definition: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  const show = useCallback(() => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    setPos({ top: rect.top - 8, left: rect.left + rect.width / 2 });
+  }, []);
+
+  const hide = useCallback(() => setPos(null), []);
+
+  return (
+    <span ref={ref} className="inline" onMouseEnter={show} onMouseLeave={hide}>
+      {children}
+      {pos &&
+        createPortal(
+          <span
+            style={{ top: pos.top, left: pos.left, transform: "translate(-50%, -100%)" }}
+            className="fixed w-64 px-3 py-2 text-xs text-white bg-gray-900 rounded-lg shadow-lg z-50 pointer-events-none"
+          >
+            <span className="font-semibold">{term}</span>
+            <span className="block mt-1 font-normal leading-relaxed">{definition}</span>
+          </span>,
+          document.body,
+        )}
+    </span>
+  );
+}
+
+function HighlightedText({ text, glossary }: { text: string; glossary: GlossaryEntry[] }) {
+  if (glossary.length === 0) return <>{text}</>;
+
+  // Sort longest-first to avoid partial matches
+  const sorted = [...glossary].sort((a, b) => b.term.length - a.term.length);
+  const escaped = sorted.map((g) => g.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const pattern = new RegExp(`\\b(${escaped.join("|")})\\b`, "gi");
+
+  const termMap = new Map(sorted.map((g) => [g.term.toLowerCase(), g.definition]));
+
+  const parts = text.split(pattern);
+
+  return (
+    <>
+      {parts.map((part, i) => {
+        const definition = termMap.get(part.toLowerCase());
+        if (!definition) return <span key={i}>{part}</span>;
+        return (
+          <GlossaryTooltip key={i} term={part} definition={definition}>
+            <span className="underline decoration-blue-300 decoration-dotted underline-offset-2 cursor-help">
+              {part}
+            </span>
+          </GlossaryTooltip>
+        );
+      })}
+    </>
+  );
+}
 
 function ReadingItem({ r }: { r: Reading }) {
   const cls = READING_BADGE[r.type] ?? "bg-gray-100 text-gray-600";
@@ -34,7 +98,19 @@ function ReadingItem({ r }: { r: Reading }) {
   );
 }
 
-export function WeekCard({ week, prevWeek, nextWeek, isActive, cardRef }: Props) {
+function DeepDiveSkeleton() {
+  return (
+    <div className="rounded-xl border border-gray-100 bg-white p-4 animate-pulse">
+      <div className="h-4 bg-gray-200 rounded w-3/4 mb-3" />
+      <div className="h-3 bg-gray-100 rounded w-full mb-1.5" />
+      <div className="h-3 bg-gray-100 rounded w-5/6" />
+    </div>
+  );
+}
+
+export function WeekCard({ week, prevWeek, nextWeek, isActive, cardRef, glossary, deepDives }: Props) {
+  const [openDive, setOpenDive] = useState<DeepDive | null>(null);
+
   return (
     <div
       ref={cardRef}
@@ -48,83 +124,146 @@ export function WeekCard({ week, prevWeek, nextWeek, isActive, cardRef }: Props)
         </span>
       </div>
 
-      {/* Main content */}
-      <motion.div
-        className="flex-1 overflow-y-auto px-6 py-8 max-w-4xl mx-auto w-full"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: isActive ? 1 : 0.3, y: isActive ? 0 : 16 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-      >
-        {/* Week label + title */}
-        <div className="mb-6">
-          <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
-            Week {week.weekNumber}
-          </span>
-          <h2 className="text-3xl font-bold text-gray-900 mt-1 leading-tight">
-            {week.title}
-          </h2>
-          <p className="mt-3 text-gray-500 text-base leading-relaxed max-w-2xl">
-            {week.overview}
-          </p>
-        </div>
+      {/* Main content — two column layout */}
+      <div className="flex-1 overflow-y-auto flex justify-center">
+        <motion.div
+          className="flex gap-8 px-6 py-8 w-full max-w-7xl"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: isActive ? 1 : 0.3, y: isActive ? 0 : 16 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+        >
+          {/* Left — main content (keeps original width) */}
+          <div className="flex-1 max-w-4xl min-w-0">
+            {/* Week label + title */}
+            <div className="mb-6">
+              <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
+                Week {week.weekNumber}
+              </span>
+              <h2 className="text-3xl font-bold text-gray-900 mt-1 leading-tight">
+                {week.title}
+              </h2>
+              <p className="mt-3 text-gray-500 text-base leading-relaxed max-w-2xl">
+                {week.overview}
+              </p>
+            </div>
 
-        {/* Content grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Left col: objectives + prereqs */}
-          <div className="space-y-6">
-            {week.prerequisites.length > 0 && (
-              <section>
+            {/* Lecture notes */}
+            {week.lectureNotes && (
+              <section className="mb-8">
                 <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-                  Prerequisites
+                  Lecture Notes
                 </h3>
-                <ul className="space-y-1.5">
-                  {week.prerequisites.map((p, i) => (
-                    <li key={i} className="flex gap-2 text-sm text-gray-600">
-                      <span className="text-gray-300 shrink-0">•</span>
-                      {p}
-                    </li>
-                  ))}
-                </ul>
+                <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line max-w-2xl">
+                  <HighlightedText text={week.lectureNotes} glossary={glossary} />
+                </div>
               </section>
             )}
 
-            <section>
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-                What You&apos;ll Learn
-              </h3>
-              <ul className="space-y-2">
-                {week.learningObjectives.map((obj, i) => (
-                  <li key={i} className="flex gap-2 text-sm text-gray-700">
-                    <span className="text-blue-500 shrink-0 mt-0.5">✓</span>
-                    {obj}
-                  </li>
-                ))}
-              </ul>
-            </section>
+            {/* Content grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Left col: objectives + prereqs */}
+              <div className="space-y-6">
+                {week.prerequisites.length > 0 && (
+                  <section>
+                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                      Prerequisites
+                    </h3>
+                    <ul className="space-y-1.5">
+                      {week.prerequisites.map((p, i) => (
+                        <li key={i} className="flex gap-2 text-sm text-gray-600">
+                          <span className="text-gray-300 shrink-0">•</span>
+                          {p}
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+
+                <section>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                    What You&apos;ll Learn
+                  </h3>
+                  <ul className="space-y-2">
+                    {week.learningObjectives.map((obj, i) => (
+                      <li key={i} className="flex gap-2 text-sm text-gray-700">
+                        <span className="text-blue-500 shrink-0 mt-0.5">✓</span>
+                        {obj}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              </div>
+
+              {/* Right col: readings */}
+              {week.requiredReading.length > 0 && (
+                <section>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                    Required Reading
+                  </h3>
+                  <ul className="space-y-4">
+                    {week.requiredReading.map((r, i) => (
+                      <ReadingItem key={i} r={r} />
+                    ))}
+                  </ul>
+                </section>
+              )}
+            </div>
           </div>
 
-          {/* Right col: readings */}
-          {week.requiredReading.length > 0 && (
-            <section>
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-                Required Reading
-              </h3>
-              <ul className="space-y-4">
-                {week.requiredReading.map((r, i) => (
-                  <ReadingItem key={i} r={r} />
-                ))}
-              </ul>
-            </section>
-          )}
-        </div>
-      </motion.div>
-
-      {/* Scroll down hint */}
-      <div className={`flex items-center justify-center py-3 border-t border-gray-100 transition-opacity duration-300 ${isActive && nextWeek ? "opacity-100" : "opacity-0"}`}>
-        <span className="text-xs text-gray-400 flex items-center gap-1.5">
-          <span className="font-medium text-gray-500">Week {nextWeek?.weekNumber}:</span> {nextWeek?.title} ↓
-        </span>
+          {/* Right sidebar — Deep Dives */}
+          <div className="hidden lg:flex flex-col w-72 shrink-0 gap-3 pt-8">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
+              Deep Dives
+            </h3>
+            {deepDives === null ? (
+              <>
+                <DeepDiveSkeleton />
+                <DeepDiveSkeleton />
+                <DeepDiveSkeleton />
+              </>
+            ) : deepDives.length === 0 ? null : (
+              deepDives.map((dive, i) => (
+                <button
+                  key={i}
+                  onClick={() => setOpenDive(dive)}
+                  className="text-left rounded-xl border border-gray-100 bg-white p-4 hover:border-blue-200 hover:shadow-md transition-all group"
+                >
+                  <h4 className="text-sm font-semibold text-gray-900 group-hover:text-blue-700 leading-snug">
+                    {dive.title}
+                  </h4>
+                  <p className="text-xs text-gray-500 mt-1.5 leading-relaxed line-clamp-2">
+                    {dive.summary}
+                  </p>
+                  <span className="text-xs text-blue-500 mt-2 inline-block font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                    Read more &rarr;
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        </motion.div>
       </div>
+
+      {/* Scroll down hint — prominent version */}
+      <div className={`flex items-center justify-center py-4 border-t border-gray-100 transition-opacity duration-300 ${isActive && nextWeek ? "opacity-100" : "opacity-0"}`}>
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
+            Up Next
+          </span>
+          <span className="text-sm text-gray-700 font-medium">
+            Week {nextWeek?.weekNumber} &mdash; {nextWeek?.title}
+          </span>
+          <motion.span
+            className="text-gray-400 text-lg"
+            animate={{ y: [0, 4, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+          >
+            &#8595;
+          </motion.span>
+        </div>
+      </div>
+
+      <DeepDiveDrawer deepDive={openDive} onClose={() => setOpenDive(null)} />
     </div>
   );
 }

@@ -14,7 +14,19 @@ export interface Week {
   overview: string;
   prerequisites: string[];
   learningObjectives: string[];
+  lectureNotes: string;
   requiredReading: Reading[];
+}
+
+export interface DeepDive {
+  title: string;
+  summary: string;
+  content: string;
+}
+
+export interface GlossaryEntry {
+  term: string;
+  definition: string;
 }
 
 export interface Course {

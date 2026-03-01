@@ -1,12 +1,21 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 export function LoadingState() {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-8 px-6 bg-white">
       <div className="text-center space-y-1">
         <p className="text-blue-600 text-sm font-medium">Building your course&hellip;</p>
         <h2 className="text-xl font-bold text-gray-900">Generating curriculum</h2>
-        <p className="text-gray-500 text-sm">This usually takes 10–20 seconds</p>
+        <p className="text-gray-500 text-sm">This usually takes 10–20 seconds · {elapsed}s elapsed</p>
       </div>
 
       <div className="w-full max-w-lg space-y-3">

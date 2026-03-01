@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Course, Level } from "@/types/course";
+import { logger } from "@/lib/logger";
 import { parseCourse } from "@/lib/parseCourse";
 
 type State =
@@ -14,6 +15,7 @@ export function useGenerateCourse() {
   const [state, setState] = useState<State>({ status: "idle" });
 
   async function generate(topic: string, level: Level) {
+    logger.info("useGenerateCourse", `Starting course generation — topic="${topic}", level="${level}"`);
     setState({ status: "loading" });
     try {
       const res = await fetch("/api/generate-course", {
@@ -29,9 +31,11 @@ export function useGenerateCourse() {
 
       const { raw } = await res.json();
       const course = parseCourse(raw);
+      logger.info("useGenerateCourse", "Course received successfully");
       setState({ status: "success", course });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Something went wrong";
+      logger.error("useGenerateCourse", `Error during generation: ${message}`);
       setState({ status: "error", message });
     }
   }
