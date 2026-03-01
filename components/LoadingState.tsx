@@ -10,6 +10,7 @@ interface Props {
 
 const STAGE_LABELS: Record<LoadingStage, string> = {
   refining: "Understanding your topic",
+  "generating-course": "Generating course",
   "generating-weeks-1-2": "Generating first weeks",
   "generating-glossary": "Generating glossary",
   "generating-remaining": "Building remaining curriculum",
