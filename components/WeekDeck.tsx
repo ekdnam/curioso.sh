@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, RefObject } from "react";
 import { Week, GlossaryEntry, DeepDiveSummary } from "@/types/course";
 import { WeekCard } from "./WeekCard";
 import { SkeletonWeekCard } from "./SkeletonWeekCard";
+import { InfiniteScrollSentinel } from "./InfiniteScrollSentinel";
 import { deepDiveMode } from "@/lib/config";
 
 interface Props {
@@ -14,9 +15,16 @@ interface Props {
   setRef: (i: number) => (el: HTMLDivElement | null) => void;
   topic: string;
   weekStatus?: Record<number, "skeleton" | "loading" | "loaded">;
+  sentinelRef?: RefObject<HTMLDivElement | null>;
+  isGeneratingNext?: boolean;
+  nextTopicPreview?: { title: string; overview: string } | null;
+  onTriggerNext?: () => void;
 }
 
-export function WeekDeck({ weeks, glossary, deepDives, activeIndex, setRef, topic, weekStatus }: Props) {
+export function WeekDeck({
+  weeks, glossary, deepDives, activeIndex, setRef, topic, weekStatus,
+  sentinelRef, isGeneratingNext, nextTopicPreview, onTriggerNext,
+}: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -61,6 +69,14 @@ export function WeekDeck({ weeks, glossary, deepDives, activeIndex, setRef, topi
           />
         );
       })}
+      {sentinelRef && onTriggerNext && (
+        <InfiniteScrollSentinel
+          sentinelRef={sentinelRef}
+          isGenerating={isGeneratingNext ?? false}
+          nextTopicPreview={nextTopicPreview ?? null}
+          onTrigger={onTriggerNext}
+        />
+      )}
     </div>
   );
 }

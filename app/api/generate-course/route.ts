@@ -114,13 +114,14 @@ For requiredReading: cite only real, verifiable works (books, papers, articles).
 
 export async function POST(req: NextRequest) {
   try {
-    const { topic, level, weekStart, weekEnd, courseOutline, allWeeks } = (await req.json()) as {
+    const { topic, level, weekStart, weekEnd, courseOutline, allWeeks, nextTopicContext } = (await req.json()) as {
       topic: string;
       level: Level;
       weekStart?: number;
       weekEnd?: number;
       courseOutline?: string;
       allWeeks?: boolean;
+      nextTopicContext?: string;
     };
 
     const isChunked = weekStart !== undefined && weekEnd !== undefined && !allWeeks;
@@ -168,14 +169,18 @@ export async function POST(req: NextRequest) {
         ? `ONLY week ${weekStart}`
         : `ONLY weeks ${weekStart} through ${weekEnd}`;
 
-      const prompt = `You are continuing to build a 10-week university-style course on: "${topic}"
+      const topicDirection = nextTopicContext
+        ? `\nSpecific direction for this week:\n${nextTopicContext}\n`
+        : "";
+
+      const prompt = `You are continuing to build a university-style course on: "${topic}"
 Difficulty level: ${level}
 
 ${LEVEL_CALIBRATION}
 
 Here is the course outline so far (week titles) for context:
 ${courseOutline ?? "Not available"}
-
+${topicDirection}
 Now generate ${weekRange}. Make sure weekNumber matches correctly.
 
 ${CONTENT_GUIDELINES}

@@ -1,14 +1,17 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Course, CourseSkeleton, DeepDive, GlossaryEntry, Level, Week } from "@/types/course";
+import { Course, CourseSkeleton, Level, Week } from "@/types/course";
 import { logger } from "@/lib/logger";
 import { prefetchAhead } from "@/lib/config";
+import { fetchGlossaryForWeek } from "@/lib/fetchGlossary";
 
 const STORAGE_KEY = "infinite-tutor:course";
 const WEEK_STATUS_KEY = "infinite-tutor:week-status";
 
-type WeekStatus = "skeleton" | "loading" | "loaded";
+type WeekStatus = WeekStatusType;
+
+export type WeekStatusType = "skeleton" | "loading" | "loaded";
 
 export type ProgressiveLoadingStage =
   | "refining"
@@ -67,38 +70,6 @@ function skeletonToWeek(skel: { weekNumber: number; title: string; description: 
     lectureNotes: "",
     requiredReading: [],
   };
-}
-
-async function fetchGlossaryForWeek(
-  week: Week,
-  topic: string,
-  signal: AbortSignal
-): Promise<GlossaryEntry[]> {
-  if (!week.lectureNotes) return [];
-  try {
-    let text = week.lectureNotes;
-    if (week.deepDives?.length) {
-      const ddText = week.deepDives
-        .map(dd => `${dd.title}\n${dd.summary}${"content" in dd ? "\n" + (dd as DeepDive).content : ""}`)
-        .join("\n\n");
-      text += "\n\n" + ddText;
-    }
-    const t0 = performance.now();
-    const res = await fetch("/api/generate-glossary", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lectureNotes: text, weekNumber: week.weekNumber, topic }),
-      signal,
-    });
-    if (!res.ok) return [];
-    const terms: GlossaryEntry[] = await res.json();
-    logger.perf("progressive", `glossary week ${week.weekNumber}`, Math.round(performance.now() - t0));
-    return terms;
-  } catch (e) {
-    if (e instanceof DOMException && e.name === "AbortError") throw e;
-    logger.error("progressive", `Error fetching glossary for week ${week.weekNumber}`);
-    return [];
-  }
 }
 
 function getInitialState(): ProgressiveState {
@@ -380,12 +351,66 @@ export function useProgressiveCourse() {
     }
   }
 
+  // Track whether the initial 10-week cascade is complete
+  const initialLoadCompleteRef = useRef(false);
+
+  // Derive initialLoadComplete from state
+  const initialLoadComplete = (() => {
+    if (initialLoadCompleteRef.current) return true;
+    if (state.status !== "success") return false;
+    const cascade = cascadeRef.current;
+    if (cascade && cascade.completed.size >= 10) {
+      initialLoadCompleteRef.current = true;
+      return true;
+    }
+    // Also check if all weekStatus values are "loaded" (e.g. restored from localStorage)
+    const allLoaded = Object.keys(state.weekStatus).length >= 10 &&
+      Object.values(state.weekStatus).every(s => s === "loaded");
+    if (allLoaded) {
+      initialLoadCompleteRef.current = true;
+      return true;
+    }
+    return false;
+  })();
+
+  const appendWeek = useCallback((week: Week, status: WeekStatus) => {
+    setState(prev => {
+      if (prev.status !== "success") return prev;
+      return {
+        ...prev,
+        course: { ...prev.course, weeks: [...prev.course.weeks, week] },
+        weekStatus: { ...prev.weekStatus, [week.weekNumber]: status },
+      };
+    });
+  }, []);
+
+  const updateWeek = useCallback((weekNumber: number, updates: Partial<Week>) => {
+    setState(prev => {
+      if (prev.status !== "success") return prev;
+      const newWeeks = prev.course.weeks.map(w =>
+        w.weekNumber === weekNumber ? { ...w, ...updates } : w
+      );
+      return { ...prev, course: { ...prev.course, weeks: newWeeks } };
+    });
+  }, []);
+
+  const setWeekStatus = useCallback((weekNumber: number, status: WeekStatus) => {
+    setState(prev => {
+      if (prev.status !== "success") return prev;
+      return {
+        ...prev,
+        weekStatus: { ...prev.weekStatus, [weekNumber]: status },
+      };
+    });
+  }, []);
+
   function reset() {
     abortRef.current?.abort();
     cascadeRef.current = null;
+    initialLoadCompleteRef.current = false;
     clearCourse();
     setState({ status: "idle" });
   }
 
-  return { state, generate, reset, requestWeek };
+  return { state, generate, reset, requestWeek, appendWeek, updateWeek, setWeekStatus, initialLoadComplete };
 }

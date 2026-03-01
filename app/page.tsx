@@ -3,9 +3,10 @@
 import { CourseForm } from "@/components/CourseForm";
 import { CourseView } from "@/components/CourseView";
 import { LoadingState } from "@/components/LoadingState";
-import { progressiveLoading } from "@/lib/config";
+import { progressiveLoading, infiniteScroll as infiniteScrollEnabled } from "@/lib/config";
 import { useGenerateCourse } from "@/hooks/useGenerateCourse";
 import { useProgressiveCourse } from "@/hooks/useProgressiveCourse";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 
 function useHook() {
   const legacy = useGenerateCourse();
@@ -16,6 +17,25 @@ function useHook() {
 export default function HomePage() {
   const { state, generate, reset, ...rest } = useHook();
   const requestWeek = "requestWeek" in rest ? rest.requestWeek : undefined;
+  const appendWeek = "appendWeek" in rest ? rest.appendWeek : undefined;
+  const updateWeek = "updateWeek" in rest ? rest.updateWeek : undefined;
+  const setWeekStatus = "setWeekStatus" in rest ? rest.setWeekStatus : undefined;
+  const initialLoadComplete = "initialLoadComplete" in rest ? rest.initialLoadComplete : false;
+
+  const course = state.status === "success" ? state.course : null;
+
+  const infiniteScrollState = useInfiniteScroll({
+    enabled: infiniteScrollEnabled && initialLoadComplete && !!appendWeek,
+    course,
+    appendWeek: appendWeek ?? (() => {}),
+    updateWeek: updateWeek ?? (() => {}),
+    setWeekStatus: setWeekStatus ?? (() => {}),
+  });
+
+  const handleReset = () => {
+    infiniteScrollState.cancel();
+    reset();
+  };
 
   if (state.status === "loading") {
     return (
@@ -29,12 +49,17 @@ export default function HomePage() {
 
   if (state.status === "success") {
     const weekStatus = "weekStatus" in state ? state.weekStatus : undefined;
+    const showSentinel = infiniteScrollEnabled && initialLoadComplete;
     return (
       <CourseView
         course={state.course}
-        onReset={reset}
+        onReset={handleReset}
         weekStatus={weekStatus}
         onRequestWeek={requestWeek}
+        sentinelRef={showSentinel ? infiniteScrollState.sentinelRef : undefined}
+        isGeneratingNext={infiniteScrollState.isGeneratingNext}
+        nextTopicPreview={infiniteScrollState.nextTopicPreview}
+        onTriggerNext={infiniteScrollState.triggerNext}
       />
     );
   }

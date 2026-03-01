@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef, useCallback } from "react";
+import { useMemo, useState, useEffect, useRef, useCallback, RefObject } from "react";
 import { Course, DeepDiveSummary, GlossaryEntry } from "@/types/course";
 import { CourseHeader } from "./CourseHeader";
 import { WeekDeck } from "./WeekDeck";
@@ -15,9 +15,16 @@ interface Props {
   onReset: () => void;
   weekStatus?: Record<number, "skeleton" | "loading" | "loaded">;
   onRequestWeek?: (weekNum: number) => void;
+  sentinelRef?: RefObject<HTMLDivElement | null>;
+  isGeneratingNext?: boolean;
+  nextTopicPreview?: { title: string; overview: string } | null;
+  onTriggerNext?: () => void;
 }
 
-export function CourseView({ course, onReset, weekStatus, onRequestWeek }: Props) {
+export function CourseView({
+  course, onReset, weekStatus, onRequestWeek,
+  sentinelRef, isGeneratingNext, nextTopicPreview, onTriggerNext,
+}: Props) {
   // Count loaded weeks so the IntersectionObserver re-attaches when skeleton→loaded swaps DOM elements
   const loadedCount = weekStatus
     ? Object.values(weekStatus).filter(s => s === "loaded").length
@@ -121,6 +128,10 @@ export function CourseView({ course, onReset, weekStatus, onRequestWeek }: Props
         setRef={setRef}
         topic={course.topic}
         weekStatus={weekStatus}
+        sentinelRef={sentinelRef}
+        isGeneratingNext={isGeneratingNext}
+        nextTopicPreview={nextTopicPreview}
+        onTriggerNext={onTriggerNext}
       />
       <ExportPDFButton
         course={course}
