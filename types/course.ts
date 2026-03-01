@@ -41,3 +41,15 @@ export interface Course {
   level: Level;
   weeks: Week[];
 }
+
+export interface WeekSkeleton {
+  weekNumber: number;
+  title: string;
+  description: string;
+}
+
+export interface CourseSkeleton {
+  courseName: string;
+  description: string;
+  weeks: WeekSkeleton[];
+}

@@ -3,17 +3,40 @@
 import { CourseForm } from "@/components/CourseForm";
 import { CourseView } from "@/components/CourseView";
 import { LoadingState } from "@/components/LoadingState";
+import { progressiveLoading } from "@/lib/config";
 import { useGenerateCourse } from "@/hooks/useGenerateCourse";
+import { useProgressiveCourse } from "@/hooks/useProgressiveCourse";
+
+function useHook() {
+  const legacy = useGenerateCourse();
+  const progressive = useProgressiveCourse();
+  return progressiveLoading ? progressive : legacy;
+}
 
 export default function HomePage() {
-  const { state, generate, reset } = useGenerateCourse();
+  const { state, generate, reset, ...rest } = useHook();
+  const requestWeek = "requestWeek" in rest ? rest.requestWeek : undefined;
 
   if (state.status === "loading") {
-    return <LoadingState stage={state.stage} topic={state.topic} />;
+    return (
+      <LoadingState
+        stage={state.stage}
+        topic={state.topic}
+        skeleton={"skeleton" in state ? state.skeleton : undefined}
+      />
+    );
   }
 
   if (state.status === "success") {
-    return <CourseView course={state.course} onReset={reset} />;
+    const weekStatus = "weekStatus" in state ? state.weekStatus : undefined;
+    return (
+      <CourseView
+        course={state.course}
+        onReset={reset}
+        weekStatus={weekStatus}
+        onRequestWeek={requestWeek}
+      />
+    );
   }
 
   // state is "idle" | "error" here

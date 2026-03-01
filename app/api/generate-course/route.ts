@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
 import { logger } from "@/lib/logger";
 import { timedGenerate } from "@/lib/timedGenerate";
+import { getCached, setCache } from "@/lib/cache";
 import { deepDiveMode } from "@/lib/config";
 import { Level } from "@/types/course";
 import { SchemaType, type Schema } from "@google/generative-ai";
@@ -139,6 +140,19 @@ export async function POST(req: NextRequest) {
     }
 
     if (isChunked) {
+      const isSingleWeek = weekStart === weekEnd;
+
+      // Check per-week cache for single-week requests
+      if (isSingleWeek) {
+        const cached = getCached<{ weeks: unknown[] }>(
+          "week-content", topic, `week-${weekStart}`
+        );
+        if (cached) {
+          logger.info("generate-course", `Cache hit for week ${weekStart}`);
+          return NextResponse.json({ raw: JSON.stringify(cached), chunk: true });
+        }
+      }
+
       // Generate only the requested weeks
       const model = genAI.getGenerativeModel({
         model: "gemini-3-flash-preview",
@@ -146,9 +160,13 @@ export async function POST(req: NextRequest) {
         generationConfig: {
           responseMimeType: "application/json",
           responseSchema: WEEKS_ONLY_SCHEMA,
-          maxOutputTokens: 12000,
+          maxOutputTokens: isSingleWeek ? 8192 : 12000,
         },
       });
+
+      const weekRange = isSingleWeek
+        ? `ONLY week ${weekStart}`
+        : `ONLY weeks ${weekStart} through ${weekEnd}`;
 
       const prompt = `You are continuing to build a 10-week university-style course on: "${topic}"
 Difficulty level: ${level}
@@ -158,16 +176,27 @@ ${LEVEL_CALIBRATION}
 Here is the course outline so far (week titles) for context:
 ${courseOutline ?? "Not available"}
 
-Now generate ONLY weeks ${weekStart} through ${weekEnd}. Make sure weekNumber matches correctly.
+Now generate ${weekRange}. Make sure weekNumber matches correctly.
 
 ${CONTENT_GUIDELINES}
 For prerequisites: reference specific prior weeks by name.`;
 
       logger.info("generate-course", `Gemini call starting for weeks ${weekStart}-${weekEnd}`);
-      const result = await timedGenerate("generate-course:chunk", () =>
-        model.generateContent(prompt)
+      const result = await timedGenerate(
+        isSingleWeek ? `generate-course:week-${weekStart}` : "generate-course:chunk",
+        () => model.generateContent(prompt)
       );
       const text = result.response.text();
+
+      // Cache single-week results
+      if (isSingleWeek) {
+        try {
+          const parsed = JSON.parse(text);
+          setCache("week-content", topic, `week-${weekStart}`, parsed);
+        } catch {
+          // cache write failure is non-fatal
+        }
+      }
 
       logger.info("generate-course", `Weeks ${weekStart}-${weekEnd} received`);
       return NextResponse.json({ raw: text, chunk: true });

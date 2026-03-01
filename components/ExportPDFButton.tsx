@@ -5,13 +5,19 @@ import { exportCoursePDF } from "@/lib/exportPDF";
 
 interface Props {
   course: Course;
+  disabled?: boolean;
 }
 
-export function ExportPDFButton({ course }: Props) {
+export function ExportPDFButton({ course, disabled }: Props) {
   return (
     <button
-      onClick={() => exportCoursePDF(course)}
-      className="fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white shadow-xl hover:bg-neutral-800 transition-colors cursor-pointer"
+      onClick={() => !disabled && exportCoursePDF(course)}
+      disabled={disabled}
+      className={`fixed bottom-6 right-6 z-30 flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium shadow-xl transition-colors ${
+        disabled
+          ? "bg-neutral-400 text-neutral-200 cursor-not-allowed"
+          : "bg-neutral-900 text-white hover:bg-neutral-800 cursor-pointer"
+      }`}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
