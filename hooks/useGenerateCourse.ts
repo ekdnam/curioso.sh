@@ -150,7 +150,7 @@ export function useGenerateCourse() {
         const res = await fetch("/api/generate-course", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ topic: resolvedTopic, level, weekStart: 1, weekEnd: 10 }),
+          body: JSON.stringify({ topic: resolvedTopic, level, allWeeks: true }),
           signal: controller.signal,
         });
 

@@ -112,15 +112,16 @@ For requiredReading: cite only real, verifiable works (books, papers, articles).
 
 export async function POST(req: NextRequest) {
   try {
-    const { topic, level, weekStart, weekEnd, courseOutline } = (await req.json()) as {
+    const { topic, level, weekStart, weekEnd, courseOutline, allWeeks } = (await req.json()) as {
       topic: string;
       level: Level;
       weekStart?: number;
       weekEnd?: number;
       courseOutline?: string;
+      allWeeks?: boolean;
     };
 
-    const isChunked = weekStart !== undefined && weekEnd !== undefined;
+    const isChunked = weekStart !== undefined && weekEnd !== undefined && !allWeeks;
 
     logger.info(
       "generate-course",
@@ -167,6 +168,37 @@ For prerequisites: reference specific prior weeks by name.`;
 
       logger.info("generate-course", `Weeks ${weekStart}-${weekEnd} received`);
       return NextResponse.json({ raw: text, chunk: true });
+    }
+
+    if (allWeeks) {
+      // Single-shot: generate course metadata + all 10 weeks
+      const model = genAI.getGenerativeModel({
+        model: "gemini-3-flash-preview",
+        systemInstruction: SYSTEM_INSTRUCTION,
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: COURSE_SCHEMA,
+          maxOutputTokens: 65536,
+        },
+      });
+
+      const prompt = `Design a 10-week university-style course on: "${topic}"
+Difficulty level: ${level}
+
+${LEVEL_CALIBRATION}
+
+Generate the course metadata (courseName, description) and ALL 10 weeks. Include exactly 10 weeks in the weeks array, numbered 1 through 10.
+
+${CONTENT_GUIDELINES}
+For prerequisites of week 1: list background knowledge.
+For prerequisites of subsequent weeks: reference specific prior weeks by name.`;
+
+      logger.info("generate-course", "Gemini call starting (single-shot: all weeks)");
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+
+      logger.info("generate-course", "Single-shot response received");
+      return NextResponse.json({ raw: text, chunk: false });
     }
 
     // Initial call: generate course metadata + first 2 weeks
