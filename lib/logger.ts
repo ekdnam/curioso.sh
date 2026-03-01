@@ -9,4 +9,7 @@ export const logger = {
   error(tag: string, message: string, ...args: unknown[]) {
     console.error(format("ERROR", tag, message), ...args);
   },
+  perf(tag: string, message: string, durationMs: number) {
+    console.log(format("PERF", tag, `${message} (${durationMs}ms)`));
+  },
 };

@@ -64,6 +64,7 @@ async function fetchGlossary(
     weeks.map(async (week) => {
       if (!week.lectureNotes) return week;
       try {
+        const t0 = performance.now();
         const res = await fetch("/api/generate-glossary", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -76,7 +77,7 @@ async function fetchGlossary(
         });
         if (!res.ok) return week;
         const terms: GlossaryEntry[] = await res.json();
-        logger.info("fetchGlossary", `Glossary loaded for week ${week.weekNumber} (${terms.length} terms)`);
+        logger.perf("fetchGlossary", `generate-glossary week ${week.weekNumber}`, Math.round(performance.now() - t0));
         return { ...week, glossary: terms };
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") throw e;
@@ -110,12 +111,14 @@ export function useGenerateCourse() {
 
     try {
       // Step 1: prefilter
+      let t0 = performance.now();
       const pfRes = await fetch("/api/prefilter-topic", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ topic }),
         signal: controller.signal,
       });
+      logger.perf("useGenerateCourse", "prefilter-topic", Math.round(performance.now() - t0));
 
       let resolvedTopic = topic;
       if (pfRes.ok) {
@@ -132,6 +135,7 @@ export function useGenerateCourse() {
 
       // Step 2: generate initial chunk (metadata + weeks 1-2)
       setState({ status: "loading", stage: "generating-weeks-1-2", topic: resolvedTopic });
+      t0 = performance.now();
       const res = await fetch("/api/generate-course", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -145,6 +149,7 @@ export function useGenerateCourse() {
       }
 
       const { raw } = await res.json();
+      logger.perf("useGenerateCourse", "generate-course weeks 1-2", Math.round(performance.now() - t0));
       const course = parseCourse(raw);
       course.topic = topic;
       course.level = level;
@@ -152,7 +157,9 @@ export function useGenerateCourse() {
 
       // Generate glossary for initial weeks before rendering
       setState({ status: "loading", stage: "generating-glossary", topic: resolvedTopic });
+      t0 = performance.now();
       course.weeks = await fetchGlossary(course.weeks, resolvedTopic, controller.signal);
+      logger.perf("useGenerateCourse", "glossary weeks 1-2", Math.round(performance.now() - t0));
 
       // Show the course immediately with what we have
       setState({ status: "success", course, loading: true });
@@ -170,6 +177,7 @@ export function useGenerateCourse() {
 
       const chunkPromises = chunks.map(async ({ weekStart, weekEnd }) => {
         try {
+          const ct0 = performance.now();
           const chunkRes = await fetch("/api/generate-course", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -186,6 +194,7 @@ export function useGenerateCourse() {
           if (!chunkRes.ok) return [];
 
           const { raw: chunkRaw } = await chunkRes.json();
+          logger.perf("useGenerateCourse", `generate-course weeks ${weekStart}-${weekEnd}`, Math.round(performance.now() - ct0));
           const parsed = JSON.parse(chunkRaw);
           const weeks: Week[] = parsed.weeks ?? [];
           logger.info("useGenerateCourse", `Chunk received — weeks ${weekStart}-${weekEnd} (${weeks.length} weeks)`);
@@ -205,7 +214,9 @@ export function useGenerateCourse() {
 
       // Generate glossary for remaining weeks
       if (allNewWeeks.length > 0) {
+        t0 = performance.now();
         allNewWeeks = await fetchGlossary(allNewWeeks, resolvedTopic, controller.signal);
+        logger.perf("useGenerateCourse", "glossary remaining weeks", Math.round(performance.now() - t0));
       }
 
       setState((prev) => {
