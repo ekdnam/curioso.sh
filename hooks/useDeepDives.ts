@@ -1,15 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Week, DeepDive } from "@/types/course";
 import { logger } from "@/lib/logger";
 
-export function useDeepDives(weeks: Week[]) {
+export function useDeepDives(weeks: Week[], activeWeekNumber: number) {
   const [deepDives, setDeepDives] = useState<Record<number, DeepDive[]>>({});
+  const fetchedRef = useRef<Set<number>>(new Set());
+  const weeksRef = useRef(weeks);
+  weeksRef.current = weeks;
 
   useEffect(() => {
-    if (weeks.length === 0) return;
+    const week = weeksRef.current.find((w) => w.weekNumber === activeWeekNumber);
+    if (!week || !week.lectureNotes) return;
+    if (fetchedRef.current.has(week.weekNumber)) return;
+    fetchedRef.current.add(week.weekNumber);
 
-    weeks.forEach(async (week) => {
-      if (!week.lectureNotes) return;
+    const controller = new AbortController();
+
+    (async () => {
       try {
         logger.info("useDeepDives", `Fetching deep dives for week ${week.weekNumber}`);
         const res = await fetch("/api/generate-deep-dives", {
@@ -18,17 +25,23 @@ export function useDeepDives(weeks: Week[]) {
           body: JSON.stringify({
             lectureNotes: week.lectureNotes,
             weekTitle: week.title,
+            weekNumber: week.weekNumber,
           }),
+          signal: controller.signal,
         });
         if (!res.ok) return;
         const items: DeepDive[] = await res.json();
         logger.info("useDeepDives", `Deep dives loaded for week ${week.weekNumber} (${items.length} items)`);
         setDeepDives((prev) => ({ ...prev, [week.weekNumber]: items }));
-      } catch {
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+        fetchedRef.current.delete(week.weekNumber);
         logger.error("useDeepDives", `Error fetching deep dives for week ${week.weekNumber}`);
       }
-    });
-  }, [weeks]);
+    })();
+
+    return () => controller.abort();
+  }, [activeWeekNumber]);
 
   return deepDives;
 }

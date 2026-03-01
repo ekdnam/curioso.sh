@@ -1,34 +1,37 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useActiveWeek(count: number) {
   const [activeIndex, setActiveIndex] = useState(0);
   const refs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
-    const observers: IntersectionObserver[] = [];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const idx = refs.current.indexOf(entry.target as HTMLDivElement);
+            if (idx !== -1) setActiveIndex(idx);
+          }
+        }
+      },
+      { threshold: 0.6 }
+    );
 
-    refs.current.forEach((el, i) => {
-      if (!el) return;
-      const obs = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) setActiveIndex(i);
-        },
-        { threshold: 0.6 }
-      );
-      obs.observe(el);
-      observers.push(obs);
+    refs.current.forEach((el) => {
+      if (el) observer.observe(el);
     });
 
-    return () => observers.forEach((o) => o.disconnect());
+    return () => observer.disconnect();
   }, [count]);
 
-  function setRef(i: number) {
-    return (el: HTMLDivElement | null) => {
+  const setRef = useCallback(
+    (i: number) => (el: HTMLDivElement | null) => {
       refs.current[i] = el;
-    };
-  }
+    },
+    []
+  );
 
   return { activeIndex, setRef };
 }
