@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { Week, GlossaryEntry, DeepDiveSummary } from "@/types/course";
 import { WeekCard } from "./WeekCard";
+import { deepDiveMode } from "@/lib/config";
 
 interface Props {
   weeks: Week[];
@@ -34,7 +35,11 @@ export function WeekDeck({ weeks, glossary, deepDives, activeIndex, setRef, topi
           isActive={i === activeIndex}
           cardRef={setRef(i)}
           glossary={glossary[week.weekNumber] ?? []}
-          deepDives={deepDives[week.weekNumber] ?? null}
+          deepDives={
+            deepDiveMode === "separate"
+              ? deepDives[week.weekNumber] ?? null
+              : week.deepDives ?? []
+          }
           topic={topic}
         />
       ))}

@@ -3,14 +3,16 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { DeepDive } from "@/types/course";
+import { DeepDive, DeepDiveSummary } from "@/types/course";
 
 interface Props {
-  deepDive: DeepDive | null;
+  deepDive: DeepDiveSummary | null;
   onClose: () => void;
+  contentOverride?: string | null;
+  loading?: boolean;
 }
 
-export function DeepDiveDrawer({ deepDive, onClose }: Props) {
+export function DeepDiveDrawer({ deepDive, onClose, contentOverride, loading }: Props) {
   useEffect(() => {
     if (!deepDive) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -71,9 +73,20 @@ export function DeepDiveDrawer({ deepDive, onClose }: Props) {
               <p className="text-sm text-gray-500 italic mb-4 leading-relaxed">
                 {deepDive.summary}
               </p>
-              <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-                {deepDive.content}
-              </div>
+              {loading ? (
+                <div className="space-y-3 animate-pulse">
+                  <div className="h-3 bg-gray-200 rounded w-full" />
+                  <div className="h-3 bg-gray-200 rounded w-5/6" />
+                  <div className="h-3 bg-gray-100 rounded w-full" />
+                  <div className="h-3 bg-gray-100 rounded w-4/6" />
+                  <div className="h-3 bg-gray-200 rounded w-full" />
+                  <div className="h-3 bg-gray-100 rounded w-3/4" />
+                </div>
+              ) : (
+                <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                  {contentOverride !== undefined ? contentOverride : (deepDive as DeepDive).content}
+                </div>
+              )}
             </div>
           </motion.aside>
         </>

@@ -16,6 +16,7 @@ export interface Week {
   learningObjectives: string[];
   lectureNotes: string;
   requiredReading: Reading[];
+  deepDives?: DeepDiveSummary[];
 }
 
 export interface DeepDiveSummary {

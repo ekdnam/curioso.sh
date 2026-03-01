@@ -2,9 +2,11 @@
 
 import { useState, memo } from "react";
 import { motion } from "framer-motion";
-import { Week, Reading, GlossaryEntry, DeepDive } from "@/types/course";
+import { Week, Reading, GlossaryEntry, DeepDive, DeepDiveSummary } from "@/types/course";
 import { DeepDiveDrawer } from "./DeepDiveDrawer";
 import { HighlightedText } from "./HighlightedText";
+import { useDeepDiveContent } from "@/hooks/useDeepDiveContent";
+import { deepDiveMode } from "@/lib/config";
 
 interface Props {
   week: Week;
@@ -13,7 +15,8 @@ interface Props {
   isActive: boolean;
   cardRef: (el: HTMLDivElement | null) => void;
   glossary: GlossaryEntry[];
-  deepDives: DeepDive[] | null;
+  deepDives: DeepDiveSummary[] | null;
+  topic: string;
 }
 
 const READING_BADGE: Record<string, string> = {
@@ -49,8 +52,24 @@ function DeepDiveSkeleton() {
   );
 }
 
-export const WeekCard = memo(function WeekCard({ week, prevWeek, nextWeek, isActive, cardRef, glossary, deepDives }: Props) {
-  const [openDive, setOpenDive] = useState<DeepDive | null>(null);
+export const WeekCard = memo(function WeekCard({ week, prevWeek, nextWeek, isActive, cardRef, glossary, deepDives, topic }: Props) {
+  const [openDive, setOpenDive] = useState<DeepDiveSummary | null>(null);
+
+  // In "bundled" mode, fetch content on-demand when a dive is opened
+  const { content: fetchedContent, loading: contentLoading } = useDeepDiveContent(
+    deepDiveMode === "bundled" && openDive ? openDive.title : null,
+    deepDiveMode === "bundled" && openDive ? openDive.summary : null,
+    deepDiveMode === "bundled" && openDive ? week.lectureNotes : null,
+    topic
+  );
+
+  // Resolve what content to show in the drawer
+  const drawerContent =
+    deepDiveMode === "full" && openDive
+      ? (openDive as DeepDive).content
+      : deepDiveMode === "bundled"
+        ? fetchedContent
+        : undefined;
 
   return (
     <div
@@ -204,7 +223,12 @@ export const WeekCard = memo(function WeekCard({ week, prevWeek, nextWeek, isAct
         </div>
       </div>
 
-      <DeepDiveDrawer deepDive={openDive} onClose={() => setOpenDive(null)} glossary={glossary} />
+      <DeepDiveDrawer
+        deepDive={openDive}
+        onClose={() => setOpenDive(null)}
+        contentOverride={drawerContent}
+        loading={deepDiveMode === "bundled" && contentLoading}
+      />
     </div>
   );
 });

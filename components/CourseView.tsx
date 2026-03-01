@@ -7,6 +7,7 @@ import { useGlossary } from "@/hooks/useGlossary";
 import { useDeepDives } from "@/hooks/useDeepDives";
 import { useActiveWeek } from "@/hooks/useActiveWeek";
 import { ExportPDFButton } from "./ExportPDFButton";
+import { deepDiveMode } from "@/lib/config";
 
 interface Props {
   course: Course;
@@ -16,7 +17,11 @@ interface Props {
 export function CourseView({ course, onReset }: Props) {
   const { activeIndex, setRef } = useActiveWeek(course.weeks.length);
   const glossary = useGlossary(course.weeks, course.topic);
-  const deepDives = useDeepDives(course.weeks, course.topic);
+  const fetchedDeepDives = useDeepDives(
+    deepDiveMode === "separate" ? course.weeks : [],
+    course.topic
+  );
+  const deepDives = deepDiveMode === "separate" ? fetchedDeepDives : {};
 
   return (
     <div className="flex flex-col h-screen overflow-hidden">

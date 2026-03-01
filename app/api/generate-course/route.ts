@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
 import { logger } from "@/lib/logger";
+import { deepDiveMode } from "@/lib/config";
 import { Level } from "@/types/course";
 import { SchemaType, type Schema } from "@google/generative-ai";
 
 const SYSTEM_INSTRUCTION =
   "You are an expert curriculum designer who creates rigorous university-level course syllabi modeled after premier universities like Stanford and UCSD.";
+
+const deepDiveItemProperties: Record<string, Schema> = {
+  title: { type: SchemaType.STRING },
+  summary: { type: SchemaType.STRING },
+  ...(deepDiveMode === "full" ? { content: { type: SchemaType.STRING } } : {}),
+};
+
+const deepDiveItemRequired =
+  deepDiveMode === "full" ? ["title", "summary", "content"] : ["title", "summary"];
 
 const WEEK_ITEMS_SCHEMA: Schema = {
   type: SchemaType.OBJECT,
@@ -36,6 +46,18 @@ const WEEK_ITEMS_SCHEMA: Schema = {
         required: ["type", "title", "author", "year", "notes"],
       },
     },
+    ...(deepDiveMode !== "separate"
+      ? {
+          deepDives: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: deepDiveItemProperties,
+              required: deepDiveItemRequired,
+            },
+          },
+        }
+      : {}),
   },
   required: [
     "weekNumber",
@@ -45,6 +67,7 @@ const WEEK_ITEMS_SCHEMA: Schema = {
     "learningObjectives",
     "lectureNotes",
     "requiredReading",
+    ...(deepDiveMode !== "separate" ? ["deepDives"] : []),
   ],
 };
 
@@ -77,8 +100,15 @@ const LEVEL_CALIBRATION = `Level calibration:
 - Intermediate: Assume 1-2 years experience, skip basics, go deep
 - Advanced: Assume expert practitioners, focus on research frontiers and tradeoffs`;
 
+const DEEP_DIVE_GUIDELINES =
+  deepDiveMode === "full"
+    ? `\nFor deepDives: generate 3 deep dive topics per week. Each should have a title, a 1-2 sentence summary, and detailed multi-paragraph content exploring the topic in depth with examples.`
+    : deepDiveMode === "bundled"
+      ? `\nFor deepDives: generate 3 deep dive topics per week. Each should have a concise title and a 1-2 sentence summary describing what the deep dive covers.`
+      : "";
+
 const CONTENT_GUIDELINES = `For lectureNotes: write detailed, multi-paragraph instructional content that teaches the week's topic. Include key concepts, explanations, and concrete examples. This should be substantive learning material — what a student would read to actually learn the content, not just a summary.
-For requiredReading: cite only real, verifiable works (books, papers, articles).`;
+For requiredReading: cite only real, verifiable works (books, papers, articles).${DEEP_DIVE_GUIDELINES}`;
 
 export async function POST(req: NextRequest) {
   try {
