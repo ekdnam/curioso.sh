@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Course, GlossaryEntry, Level, Week } from "@/types/course";
+import { Course, DeepDive, GlossaryEntry, Level, Week } from "@/types/course";
 import { logger } from "@/lib/logger";
 import { parseCourse } from "@/lib/parseCourse";
 
@@ -64,12 +64,20 @@ async function fetchGlossary(
     weeks.map(async (week) => {
       if (!week.lectureNotes) return week;
       try {
+        let text = week.lectureNotes;
+        if (week.deepDives?.length) {
+          logger.info("fetchGlossary", `Including ${week.deepDives.length} deep dives for week ${week.weekNumber}`);
+          const ddText = week.deepDives
+            .map(dd => `${dd.title}\n${dd.summary}${"content" in dd ? "\n" + (dd as DeepDive).content : ""}`)
+            .join("\n\n");
+          text += "\n\n" + ddText;
+        }
         const t0 = performance.now();
         const res = await fetch("/api/generate-glossary", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            lectureNotes: week.lectureNotes,
+            lectureNotes: text,
             weekNumber: week.weekNumber,
             topic,
           }),

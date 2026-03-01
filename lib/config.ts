@@ -1,2 +1,2 @@
 export type DeepDiveMode = "separate" | "bundled" | "full";
-export const deepDiveMode: DeepDiveMode = "bundled"; // change to switch modes
+export const deepDiveMode: DeepDiveMode = "full"; // change to switch modes
