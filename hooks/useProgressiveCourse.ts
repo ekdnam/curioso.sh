@@ -376,6 +376,7 @@ export function useProgressiveCourse() {
   const appendWeek = useCallback((week: Week, status: WeekStatus) => {
     setState(prev => {
       if (prev.status !== "success") return prev;
+      if (prev.course.weeks.some(w => w.weekNumber === week.weekNumber)) return prev;
       return {
         ...prev,
         course: { ...prev.course, weeks: [...prev.course.weeks, week] },
