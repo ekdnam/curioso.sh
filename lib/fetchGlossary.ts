@@ -1,10 +1,17 @@
 import { Week, DeepDive, GlossaryEntry } from "@/types/course";
 import { logger } from "@/lib/logger";
 
+export function collectKnownTerms(weeks: Week[]): string[] {
+  return weeks
+    .filter(w => w.glossary && w.glossary.length > 0)
+    .flatMap(w => w.glossary!.map(g => g.term));
+}
+
 export async function fetchGlossaryForWeek(
   week: Week,
   topic: string,
-  signal: AbortSignal
+  signal: AbortSignal,
+  knownTerms?: string[]
 ): Promise<GlossaryEntry[]> {
   if (!week.lectureNotes) return [];
   try {
@@ -19,7 +26,7 @@ export async function fetchGlossaryForWeek(
     const res = await fetch("/api/generate-glossary", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lectureNotes: text, weekNumber: week.weekNumber, topic }),
+      body: JSON.stringify({ lectureNotes: text, weekNumber: week.weekNumber, topic, knownTerms }),
       signal,
     });
     if (!res.ok) return [];

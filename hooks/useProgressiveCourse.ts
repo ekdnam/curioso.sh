@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Course, CourseSkeleton, Level, Week } from "@/types/course";
 import { logger } from "@/lib/logger";
 import { prefetchAhead } from "@/lib/config";
-import { fetchGlossaryForWeek } from "@/lib/fetchGlossary";
+import { fetchGlossaryForWeek, collectKnownTerms } from "@/lib/fetchGlossary";
 
 const STORAGE_KEY = "infinite-tutor:course";
 const WEEK_STATUS_KEY = "infinite-tutor:week-status";
@@ -239,6 +239,9 @@ export function useProgressiveCourse() {
 
       if (genId !== generationIdRef.current) return;
 
+      // Accumulate glossary terms across weeks to avoid duplicates
+      const glossaryTermAccumulator: string[] = w1Glossary.map(g => g.term);
+
       // Step 4: cascade remaining weeks
       const queue = Array.from({ length: 9 }, (_, i) => i + 2); // [2, 3, ..., 10]
       const inFlight = new Set<number>();
@@ -310,10 +313,13 @@ export function useProgressiveCourse() {
             };
           });
 
-          // Fire-and-forget glossary fetch for this week
-          fetchGlossaryForWeek(weekData, resolvedTopic, controller.signal)
+          // Fire-and-forget glossary fetch for this week, passing known terms
+          const knownTerms = [...glossaryTermAccumulator];
+          fetchGlossaryForWeek(weekData, resolvedTopic, controller.signal, knownTerms)
             .then(glossary => {
               if (genId !== generationIdRef.current) return;
+              // Accumulate newly fetched terms for future weeks
+              for (const g of glossary) glossaryTermAccumulator.push(g.term);
               if (glossary.length === 0) return;
               setState(prev => {
                 if (prev.status !== "success") return prev;

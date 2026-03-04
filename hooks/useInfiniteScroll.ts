@@ -4,7 +4,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { Course, Week } from "@/types/course";
 import { logger } from "@/lib/logger";
 import { generateNextWeek } from "@/lib/generateNextWeek";
-import { fetchGlossaryForWeek } from "@/lib/fetchGlossary";
+import { fetchGlossaryForWeek, collectKnownTerms } from "@/lib/fetchGlossary";
 import type { WeekStatusType } from "@/hooks/useProgressiveCourse";
 
 interface UseInfiniteScrollOptions {
@@ -93,8 +93,9 @@ export function useInfiniteScroll({
 
       logger.info("infiniteScroll", `Week ${nextWeekNumber} loaded`);
 
-      // Fire-and-forget glossary
-      fetchGlossaryForWeek(weekData, course.topic, controller.signal)
+      // Fire-and-forget glossary, passing known terms from loaded weeks
+      const knownTerms = collectKnownTerms(course.weeks);
+      fetchGlossaryForWeek(weekData, course.topic, controller.signal, knownTerms)
         .then(glossary => {
           if (glossary.length > 0) {
             updateWeek(nextWeekNumber, { glossary });

@@ -5,6 +5,7 @@ import { Course, DeepDive, GlossaryEntry, Level, Week } from "@/types/course";
 import { logger } from "@/lib/logger";
 import { parseCourse } from "@/lib/parseCourse";
 import { singleShotCourse } from "@/lib/config";
+import { collectKnownTerms } from "@/lib/fetchGlossary";
 
 const STORAGE_KEY = "infinite-tutor:course";
 
@@ -51,7 +52,8 @@ type State =
 async function fetchGlossary(
   weeks: Week[],
   topic: string,
-  signal: AbortSignal
+  signal: AbortSignal,
+  knownTerms: string[] = []
 ): Promise<Week[]> {
   const results = await Promise.all(
     weeks.map(async (week) => {
@@ -73,6 +75,7 @@ async function fetchGlossary(
             lectureNotes: text,
             weekNumber: week.weekNumber,
             topic,
+            knownTerms,
           }),
           signal,
         });
@@ -255,10 +258,11 @@ export function useGenerateCourse() {
           r.status === "fulfilled" ? r.value : []
         );
 
-        // Generate glossary for remaining weeks
+        // Generate glossary for remaining weeks, passing terms from weeks 1-2
         if (allNewWeeks.length > 0) {
           t0 = performance.now();
-          allNewWeeks = await fetchGlossary(allNewWeeks, resolvedTopic, controller.signal);
+          const priorTerms = collectKnownTerms(course.weeks);
+          allNewWeeks = await fetchGlossary(allNewWeeks, resolvedTopic, controller.signal, priorTerms);
           logger.perf("useGenerateCourse", "glossary remaining weeks", Math.round(performance.now() - t0));
         }
 

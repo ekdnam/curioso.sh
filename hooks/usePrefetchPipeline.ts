@@ -4,7 +4,7 @@ import { useRef, useState, useEffect, useCallback } from "react";
 import { Course, Week } from "@/types/course";
 import { logger } from "@/lib/logger";
 import { generateNextWeek } from "@/lib/generateNextWeek";
-import { fetchGlossaryForWeek } from "@/lib/fetchGlossary";
+import { fetchGlossaryForWeek, collectKnownTerms } from "@/lib/fetchGlossary";
 import type { WeekStatusType } from "@/hooks/useProgressiveCourse";
 
 interface UsePrefetchPipelineOptions {
@@ -117,8 +117,9 @@ export function usePrefetchPipeline({
 
         logger.info("prefetch", `Week ${nextWeekNumber} prefetched`);
 
-        // Fire-and-forget glossary
-        fetchGlossaryForWeek(weekData, currentCourse.topic, controller.signal)
+        // Fire-and-forget glossary, passing known terms from loaded weeks
+        const knownTerms = collectKnownTerms(courseRef.current?.weeks ?? currentCourse.weeks);
+        fetchGlossaryForWeek(weekData, currentCourse.topic, controller.signal, knownTerms)
           .then(glossary => {
             if (glossary.length > 0) {
               updateWeekRef.current(nextWeekNumber, { glossary });
