@@ -129,8 +129,6 @@ export function usePrefetchPipeline({
               weekNumber: nextWeekNumber,
               title: roadmapEntry.title,
               overview: roadmapEntry.overview,
-              prerequisites: [],
-              learningObjectives: [],
               lectureNotes: "",
               requiredReading: [],
             };
@@ -195,8 +193,6 @@ export function usePrefetchPipeline({
             weekNumber: nextWeekNumber,
             title: recommendation.nextTopicTitle,
             overview: recommendation.nextTopicOverview,
-            prerequisites: [],
-            learningObjectives: [],
             lectureNotes: "",
             requiredReading: [],
           };

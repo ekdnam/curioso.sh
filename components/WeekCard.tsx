@@ -119,55 +119,19 @@ export const WeekCard = memo(function WeekCard({ week, prevWeek, nextWeek, isAct
               </section>
             )}
 
-            {/* Content grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Left col: objectives + prereqs */}
-              <div className="space-y-6">
-                {week.prerequisites.length > 0 && (
-                  <section>
-                    <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-                      Prerequisites
-                    </h3>
-                    <ul className="space-y-1.5">
-                      {week.prerequisites.map((p, i) => (
-                        <li key={i} className="flex gap-2 text-sm text-gray-600">
-                          <span className="text-gray-300 shrink-0">•</span>
-                          {p}
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                )}
-
-                <section>
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-                    What You&apos;ll Learn
-                  </h3>
-                  <ul className="space-y-2">
-                    {week.learningObjectives.map((obj, i) => (
-                      <li key={i} className="flex gap-2 text-sm text-gray-700">
-                        <span className="text-blue-500 shrink-0 mt-0.5">✓</span>
-                        {obj}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              </div>
-
-              {/* Right col: readings */}
-              {week.requiredReading.length > 0 && (
-                <section>
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-                    Required Reading
-                  </h3>
-                  <ul className="space-y-4">
-                    {week.requiredReading.map((r, i) => (
-                      <ReadingItem key={i} r={r} />
-                    ))}
-                  </ul>
-                </section>
-              )}
-            </div>
+            {/* Readings */}
+            {week.requiredReading.length > 0 && (
+              <section>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
+                  Required Reading
+                </h3>
+                <ul className="space-y-4">
+                  {week.requiredReading.map((r, i) => (
+                    <ReadingItem key={i} r={r} />
+                  ))}
+                </ul>
+              </section>
+            )}
           </div>
 
           {/* Right sidebar — Deep Dives */}

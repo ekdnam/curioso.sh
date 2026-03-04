@@ -12,8 +12,6 @@ export interface Week {
   weekNumber: number;
   title: string;
   overview: string;
-  prerequisites: string[];
-  learningObjectives: string[];
   lectureNotes: string;
   requiredReading: Reading[];
   deepDives?: DeepDiveSummary[];

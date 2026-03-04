@@ -25,14 +25,6 @@ const WEEK_ITEMS_SCHEMA: Schema = {
     weekNumber: { type: SchemaType.INTEGER },
     title: { type: SchemaType.STRING },
     overview: { type: SchemaType.STRING },
-    prerequisites: {
-      type: SchemaType.ARRAY,
-      items: { type: SchemaType.STRING },
-    },
-    learningObjectives: {
-      type: SchemaType.ARRAY,
-      items: { type: SchemaType.STRING },
-    },
     lectureNotes: { type: SchemaType.STRING },
     requiredReading: {
       type: SchemaType.ARRAY,
@@ -65,8 +57,6 @@ const WEEK_ITEMS_SCHEMA: Schema = {
     "weekNumber",
     "title",
     "overview",
-    "prerequisites",
-    "learningObjectives",
     "lectureNotes",
     "requiredReading",
     ...(deepDiveMode !== "separate" ? ["deepDives"] : []),
@@ -183,8 +173,7 @@ ${courseOutline ?? "Not available"}
 ${topicDirection}
 Now generate ${weekRange}. Make sure weekNumber matches correctly.
 
-${CONTENT_GUIDELINES}
-For prerequisites: reference specific prior weeks by name.`;
+${CONTENT_GUIDELINES}`;
 
       logger.info("generate-course", `Gemini call starting for weeks ${weekStart}-${weekEnd}`);
       const result = await timedGenerate(
@@ -226,9 +215,7 @@ ${LEVEL_CALIBRATION}
 
 Generate the course metadata (courseName, description) and ALL 10 weeks. Include exactly 10 weeks in the weeks array, numbered 1 through 10.
 
-${CONTENT_GUIDELINES}
-For prerequisites of week 1: list background knowledge.
-For prerequisites of subsequent weeks: reference specific prior weeks by name.`;
+${CONTENT_GUIDELINES}`;
 
       logger.info("generate-course", "Gemini call starting (single-shot: all weeks)");
       const result = await timedGenerate("generate-course:all-weeks", () =>
@@ -258,9 +245,7 @@ ${LEVEL_CALIBRATION}
 
 IMPORTANT: Generate the course metadata (courseName, description) and ONLY weeks 1 and 2. Include a total of exactly 2 weeks in the weeks array.
 
-${CONTENT_GUIDELINES}
-For prerequisites of week 1: list background knowledge.
-For prerequisites of week 2: reference week 1 by name.`;
+${CONTENT_GUIDELINES}`;
 
     logger.info("generate-course", "Gemini call starting (initial chunk: weeks 1-2)");
     const result = await timedGenerate("generate-course:initial", () =>

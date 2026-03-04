@@ -65,8 +65,6 @@ function skeletonToWeek(skel: { weekNumber: number; title: string; description: 
     weekNumber: skel.weekNumber,
     title: skel.title,
     overview: skel.description,
-    prerequisites: [],
-    learningObjectives: [],
     lectureNotes: "",
     requiredReading: [],
   };

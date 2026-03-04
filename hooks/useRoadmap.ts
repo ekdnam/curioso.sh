@@ -103,8 +103,6 @@ export function useRoadmap({ enabled, course, appendWeek }: UseRoadmapOptions) {
           weekNumber: topic.weekNumber,
           title: topic.title,
           overview: topic.overview,
-          prerequisites: [],
-          learningObjectives: [],
           lectureNotes: "",
           requiredReading: [],
         };
