@@ -1,7 +1,6 @@
 export type Level = "Beginner" | "Intermediate" | "Advanced";
 
 export interface Reading {
-  type: "book" | "paper" | "article" | "chapter";
   title: string;
   author: string;
   year: number;

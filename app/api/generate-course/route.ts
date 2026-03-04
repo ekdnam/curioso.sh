@@ -31,13 +31,12 @@ const WEEK_ITEMS_SCHEMA: Schema = {
       items: {
         type: SchemaType.OBJECT,
         properties: {
-          type: { type: SchemaType.STRING },
           title: { type: SchemaType.STRING },
           author: { type: SchemaType.STRING },
           year: { type: SchemaType.INTEGER },
           notes: { type: SchemaType.STRING },
         },
-        required: ["type", "title", "author", "year", "notes"],
+        required: ["title", "author", "year", "notes"],
       },
     },
     ...(deepDiveMode !== "separate"

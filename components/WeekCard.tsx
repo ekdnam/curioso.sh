@@ -19,25 +19,12 @@ interface Props {
   topic: string;
 }
 
-const READING_BADGE: Record<string, string> = {
-  book:    "bg-green-100 text-green-700",
-  paper:   "bg-blue-100 text-blue-700",
-  article: "bg-orange-100 text-orange-700",
-  chapter: "bg-purple-100 text-purple-700",
-};
-
 function ReadingItem({ r }: { r: Reading }) {
-  const cls = READING_BADGE[r.type] ?? "bg-gray-100 text-gray-600";
   return (
-    <li className="flex gap-3 items-start">
-      <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 mt-0.5 ${cls}`}>
-        {r.type}
-      </span>
-      <div>
-        <p className="text-gray-900 text-sm font-medium leading-snug">{r.title}</p>
-        <p className="text-gray-500 text-xs mt-0.5">{r.author} · {r.year}</p>
-        {r.notes && <p className="text-gray-400 text-xs mt-0.5 italic">{r.notes}</p>}
-      </div>
+    <li>
+      <p className="text-gray-900 text-sm font-medium leading-snug">{r.title}</p>
+      <p className="text-gray-500 text-xs mt-0.5">{r.author} · {r.year}</p>
+      {r.notes && <p className="text-gray-400 text-xs mt-0.5 italic">{r.notes}</p>}
     </li>
   );
 }
@@ -119,22 +106,9 @@ export const WeekCard = memo(function WeekCard({ week, prevWeek, nextWeek, isAct
               </section>
             )}
 
-            {/* Readings */}
-            {week.requiredReading.length > 0 && (
-              <section>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-                  Required Reading
-                </h3>
-                <ul className="space-y-4">
-                  {week.requiredReading.map((r, i) => (
-                    <ReadingItem key={i} r={r} />
-                  ))}
-                </ul>
-              </section>
-            )}
           </div>
 
-          {/* Right sidebar — Deep Dives */}
+          {/* Right sidebar — Deep Dives + Readings */}
           <div className="hidden lg:flex flex-col w-72 shrink-0 gap-3 pt-8">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
               Deep Dives
@@ -163,6 +137,20 @@ export const WeekCard = memo(function WeekCard({ week, prevWeek, nextWeek, isAct
                   </span>
                 </button>
               ))
+            )}
+
+            {/* Required Reading */}
+            {week.requiredReading.length > 0 && (
+              <>
+                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1 mt-4">
+                  Required Reading
+                </h3>
+                <ul className="space-y-3">
+                  {week.requiredReading.map((r, i) => (
+                    <ReadingItem key={i} r={r} />
+                  ))}
+                </ul>
+              </>
             )}
           </div>
         </motion.div>
