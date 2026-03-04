@@ -47,15 +47,6 @@ type State =
   | { status: "success"; course: Course; loading?: boolean }
   | { status: "error"; message: string };
 
-function getInitialState(): State {
-  if (typeof window === "undefined") return { status: "idle" };
-  const saved = loadCourse();
-  if (saved) {
-    logger.info("useGenerateCourse", "Restored course from localStorage");
-    return { status: "success", course: saved };
-  }
-  return { status: "idle" };
-}
 
 async function fetchGlossary(
   weeks: Week[],
@@ -100,8 +91,17 @@ async function fetchGlossary(
 }
 
 export function useGenerateCourse() {
-  const [state, setState] = useState<State>(getInitialState);
+  const [state, setState] = useState<State>({ status: "idle" });
   const abortRef = useRef<AbortController | null>(null);
+
+  // Restore from localStorage after hydration to avoid SSR mismatch
+  useEffect(() => {
+    const saved = loadCourse();
+    if (saved) {
+      logger.info("useGenerateCourse", "Restored course from localStorage");
+      setState({ status: "success", course: saved });
+    }
+  }, []);
 
   // Persist when the course object changes (not on every state update)
   const course = state.status === "success" ? state.course : null;

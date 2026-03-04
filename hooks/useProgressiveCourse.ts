@@ -72,19 +72,18 @@ function skeletonToWeek(skel: { weekNumber: number; title: string; description: 
   };
 }
 
-function getInitialState(): ProgressiveState {
-  if (typeof window === "undefined") return { status: "idle" };
-  const saved = loadCourse();
-  if (saved) {
-    logger.info("useProgressiveCourse", "Restored course from localStorage");
-    return { status: "success", course: saved.course, weekStatus: saved.weekStatus };
-  }
-  return { status: "idle" };
-}
-
 export function useProgressiveCourse() {
-  const [state, setState] = useState<ProgressiveState>(getInitialState);
+  const [state, setState] = useState<ProgressiveState>({ status: "idle" });
   const abortRef = useRef<AbortController | null>(null);
+
+  // Restore from localStorage after hydration to avoid SSR mismatch
+  useEffect(() => {
+    const saved = loadCourse();
+    if (saved) {
+      logger.info("useProgressiveCourse", "Restored course from localStorage");
+      setState({ status: "success", course: saved.course, weekStatus: saved.weekStatus });
+    }
+  }, []);
   const generationIdRef = useRef(0);
   // Ref for cascade queue so requestWeek can mutate it synchronously
   const cascadeRef = useRef<{
