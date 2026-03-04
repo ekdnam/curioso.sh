@@ -9,4 +9,8 @@ export const prefetchAhead = 2; // number of weeks to fetch in parallel during c
 export const infiniteScroll = true; // true = generate weeks beyond 10 on scroll
 
 export const prefetchRecommendations = true; // true = proactively prefetch upcoming weeks
-export const prefetchCount = 2; // how many weeks to keep buffered ahead of consumption frontier
+export const prefetchCount = 3; // how many weeks to keep buffered ahead of consumption frontier
+
+export const roadmapBatchSize = 20; // how many topics to batch-predict at once
+export const roadmapRefetchThreshold = 5; // refetch roadmap when fewer than this many topics remain
+export const maxPrefetchCount = 10; // upper bound for dynamic prefetch count

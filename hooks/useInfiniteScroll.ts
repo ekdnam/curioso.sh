@@ -1,10 +1,9 @@
 "use client";
 
 import { useRef, useState, useEffect, useCallback } from "react";
-import { Course, Week } from "@/types/course";
+import { Course, Week, RoadmapTopic } from "@/types/course";
 import { logger } from "@/lib/logger";
 import { generateNextWeek } from "@/lib/generateNextWeek";
-import { fetchGlossaryForWeek, collectKnownTerms } from "@/lib/fetchGlossary";
 import type { WeekStatusType } from "@/hooks/useProgressiveCourse";
 
 interface UseInfiniteScrollOptions {
@@ -14,6 +13,7 @@ interface UseInfiniteScrollOptions {
   updateWeek: (weekNumber: number, updates: Partial<Week>) => void;
   setWeekStatus: (weekNumber: number, status: WeekStatusType) => void;
   onWeekConsumed?: () => void;
+  roadmap?: RoadmapTopic[];
 }
 
 interface NextTopicPreview {
@@ -28,12 +28,17 @@ export function useInfiniteScroll({
   updateWeek,
   setWeekStatus,
   onWeekConsumed,
+  roadmap,
 }: UseInfiniteScrollOptions) {
   const [isGeneratingNext, setIsGeneratingNext] = useState(false);
   const [nextTopicPreview, setNextTopicPreview] = useState<NextTopicPreview | null>(null);
   const isGeneratingRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  // Refs for stable access
+  const roadmapRef = useRef(roadmap);
+  roadmapRef.current = roadmap;
 
   const triggerNext = useCallback(async () => {
     if (!enabled || !course || isGeneratingRef.current) return;
@@ -64,46 +69,92 @@ export function useInfiniteScroll({
     abortRef.current = controller;
 
     try {
-      const { recommendation, weekData } = await generateNextWeek({
-        course,
-        nextWeekNumber,
-        signal: controller.signal,
-      });
+      // Check if we have a roadmap entry for this week
+      const roadmapEntry = roadmapRef.current?.find(t => t.weekNumber === nextWeekNumber);
 
-      setNextTopicPreview({
-        title: recommendation.nextTopicTitle,
-        overview: recommendation.nextTopicOverview,
-      });
-
-      // Append skeleton week
-      const skeletonWeek: Week = {
-        weekNumber: nextWeekNumber,
-        title: recommendation.nextTopicTitle,
-        overview: recommendation.nextTopicOverview,
-        prerequisites: [],
-        learningObjectives: [],
-        lectureNotes: "",
-        requiredReading: [],
-      };
-      appendWeek(skeletonWeek, "loading");
-
-      // Update with full content
-      updateWeek(nextWeekNumber, weekData);
-      setWeekStatus(nextWeekNumber, "loaded");
-
-      logger.info("infiniteScroll", `Week ${nextWeekNumber} loaded`);
-
-      // Fire-and-forget glossary, passing known terms from loaded weeks
-      const knownTerms = collectKnownTerms(course.weeks);
-      fetchGlossaryForWeek(weekData, course.topic, controller.signal, knownTerms)
-        .then(glossary => {
-          if (glossary.length > 0) {
-            updateWeek(nextWeekNumber, { glossary });
-          }
-        })
-        .catch(() => {
-          // glossary failure is non-fatal
+      if (roadmapEntry) {
+        // Fast path: skip recommend, use roadmap topic directly
+        setNextTopicPreview({
+          title: roadmapEntry.title,
+          overview: roadmapEntry.overview,
         });
+
+        const skeletonWeek: Week = {
+          weekNumber: nextWeekNumber,
+          title: roadmapEntry.title,
+          overview: roadmapEntry.overview,
+          prerequisites: [],
+          learningObjectives: [],
+          lectureNotes: "",
+          requiredReading: [],
+        };
+        appendWeek(skeletonWeek, "loading");
+
+        const courseOutline = course.weeks
+          .map(w => `Week ${w.weekNumber}: ${w.title} — ${w.overview}`)
+          .join("\n");
+
+        const nextTopicContext = `Title: ${roadmapEntry.title}\nOverview: ${roadmapEntry.overview}`;
+
+        const genRes = await fetch("/api/generate-course", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            topic: course.topic,
+            level: course.level,
+            weekStart: nextWeekNumber,
+            weekEnd: nextWeekNumber,
+            courseOutline,
+            nextTopicContext,
+          }),
+          signal: controller.signal,
+        });
+
+        if (!genRes.ok) {
+          const errData = await genRes.json().catch(() => ({}));
+          throw new Error(errData.error || `Generate API returned ${genRes.status}`);
+        }
+
+        const { raw } = await genRes.json();
+        const parsed = JSON.parse(raw);
+        const weekData: Week = (parsed.weeks ?? [])[0];
+
+        if (!weekData) throw new Error("Week generation returned no data");
+        weekData.weekNumber = nextWeekNumber;
+
+        updateWeek(nextWeekNumber, weekData);
+        setWeekStatus(nextWeekNumber, "loaded");
+
+        logger.info("infiniteScroll", `Week ${nextWeekNumber} loaded via roadmap`);
+      } else {
+        // Full fallback: recommend → generate
+        const { recommendation, weekData } = await generateNextWeek({
+          course,
+          nextWeekNumber,
+          signal: controller.signal,
+        });
+
+        setNextTopicPreview({
+          title: recommendation.nextTopicTitle,
+          overview: recommendation.nextTopicOverview,
+        });
+
+        const skeletonWeek: Week = {
+          weekNumber: nextWeekNumber,
+          title: recommendation.nextTopicTitle,
+          overview: recommendation.nextTopicOverview,
+          prerequisites: [],
+          learningObjectives: [],
+          lectureNotes: "",
+          requiredReading: [],
+        };
+        appendWeek(skeletonWeek, "loading");
+
+        updateWeek(nextWeekNumber, weekData);
+        setWeekStatus(nextWeekNumber, "loaded");
+
+        logger.info("infiniteScroll", `Week ${nextWeekNumber} loaded`);
+      }
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return;
       logger.error("infiniteScroll", `Error: ${e instanceof Error ? e.message : "Unknown"}`);

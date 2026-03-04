@@ -8,6 +8,7 @@ import { useDeepDives } from "@/hooks/useDeepDives";
 import { useActiveWeek } from "@/hooks/useActiveWeek";
 import { ExportPDFButton } from "./ExportPDFButton";
 import { deepDiveMode } from "@/lib/config";
+import { fetchGlossaryForWeek, collectKnownTerms } from "@/lib/fetchGlossary";
 import { logger } from "@/lib/logger";
 
 interface Props {
@@ -19,17 +20,24 @@ interface Props {
   isGeneratingNext?: boolean;
   nextTopicPreview?: { title: string; overview: string } | null;
   onTriggerNext?: () => void;
+  onScrollVelocityRecord?: (weekIndex: number) => void;
 }
 
 export function CourseView({
   course, onReset, weekStatus, onRequestWeek,
   sentinelRef, isGeneratingNext, nextTopicPreview, onTriggerNext,
+  onScrollVelocityRecord,
 }: Props) {
   // Count loaded weeks so the IntersectionObserver re-attaches when skeleton→loaded swaps DOM elements
   const loadedCount = weekStatus
     ? Object.values(weekStatus).filter(s => s === "loaded").length
     : course.weeks.length;
   const { activeIndex, setRef } = useActiveWeek(course.weeks.length, loadedCount);
+
+  // Report scroll velocity
+  useEffect(() => {
+    onScrollVelocityRecord?.(activeIndex);
+  }, [activeIndex, onScrollVelocityRecord]);
 
   // Seed glossary from course.weeks (updated when weeks change)
   const baseGlossary = useMemo(() => {
@@ -48,6 +56,37 @@ export function CourseView({
   useEffect(() => {
     setGlossary(prev => ({ ...prev, ...baseGlossary }));
   }, [baseGlossary]);
+
+  // Viewport-gated glossary: fetch glossary for activeIndex and activeIndex+1
+  const glossaryFetchedRef = useRef<Set<number>>(new Set());
+
+  useEffect(() => {
+    const weekIndices = [activeIndex, activeIndex + 1];
+    for (const idx of weekIndices) {
+      const week = course.weeks[idx];
+      if (!week) continue;
+      // Only fetch if week has lectureNotes but no glossary yet, and not already fetching
+      if (!week.lectureNotes) continue;
+      if (week.glossary && week.glossary.length > 0) continue;
+      if (glossary[week.weekNumber]?.length > 0) continue;
+      if (glossaryFetchedRef.current.has(week.weekNumber)) continue;
+
+      glossaryFetchedRef.current.add(week.weekNumber);
+
+      const knownTerms = collectKnownTerms(course.weeks);
+      const controller = new AbortController();
+      fetchGlossaryForWeek(week, course.topic, controller.signal, knownTerms)
+        .then(terms => {
+          if (terms.length > 0) {
+            setGlossary(prev => ({ ...prev, [week.weekNumber]: terms }));
+          }
+        })
+        .catch(() => {
+          // Allow retry on next viewport enter
+          glossaryFetchedRef.current.delete(week.weekNumber);
+        });
+    }
+  }, [activeIndex, course.weeks, course.topic, glossary]);
 
   const fetchedDeepDives = useDeepDives(
     deepDiveMode === "separate" ? course.weeks : [],

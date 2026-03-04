@@ -368,10 +368,10 @@ export function useProgressiveCourse() {
       initialLoadCompleteRef.current = true;
       return true;
     }
-    // Also check if all weekStatus values are "loaded" (e.g. restored from localStorage)
-    const allLoaded = Object.keys(state.weekStatus).length >= 10 &&
-      Object.values(state.weekStatus).every(s => s === "loaded");
-    if (allLoaded) {
+    // Also check if at least 10 weeks are loaded (e.g. restored from localStorage)
+    // Note: can't use every() because roadmap may have appended skeleton entries
+    const loadedCount = Object.values(state.weekStatus).filter(s => s === "loaded").length;
+    if (loadedCount >= 10) {
       initialLoadCompleteRef.current = true;
       return true;
     }

@@ -53,3 +53,9 @@ export interface CourseSkeleton {
   description: string;
   weeks: WeekSkeleton[];
 }
+
+export interface RoadmapTopic {
+  weekNumber: number;
+  title: string;
+  overview: string;
+}

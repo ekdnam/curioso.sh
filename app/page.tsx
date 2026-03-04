@@ -3,11 +3,13 @@
 import { CourseForm } from "@/components/CourseForm";
 import { CourseView } from "@/components/CourseView";
 import { LoadingState } from "@/components/LoadingState";
-import { progressiveLoading, infiniteScroll as infiniteScrollEnabled, prefetchRecommendations, prefetchCount } from "@/lib/config";
+import { progressiveLoading, infiniteScroll as infiniteScrollEnabled, prefetchRecommendations } from "@/lib/config";
 import { useGenerateCourse } from "@/hooks/useGenerateCourse";
 import { useProgressiveCourse } from "@/hooks/useProgressiveCourse";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { usePrefetchPipeline } from "@/hooks/usePrefetchPipeline";
+import { useRoadmap } from "@/hooks/useRoadmap";
+import { useScrollVelocity } from "@/hooks/useScrollVelocity";
 
 function useHook() {
   const legacy = useGenerateCourse();
@@ -25,13 +27,25 @@ export default function HomePage() {
 
   const course = state.status === "success" ? state.course : null;
 
+  const scrollVelocity = useScrollVelocity();
+
+  const roadmap = useRoadmap({
+    enabled: infiniteScrollEnabled && initialLoadComplete && !!appendWeek,
+    course,
+    appendWeek: appendWeek ?? (() => {}),
+  });
+
+  const dynamicPrefetchCount = scrollVelocity.getDynamicPrefetchCount();
+
   const prefetchPipeline = usePrefetchPipeline({
     enabled: prefetchRecommendations && infiniteScrollEnabled && initialLoadComplete && !!appendWeek,
     course,
     appendWeek: appendWeek ?? (() => {}),
     updateWeek: updateWeek ?? (() => {}),
     setWeekStatus: setWeekStatus ?? (() => {}),
-    prefetchCount,
+    prefetchCount: dynamicPrefetchCount,
+    roadmap: roadmap.topics,
+    onRoadmapExhausted: roadmap.fetchMore,
   });
 
   const infiniteScrollState = useInfiniteScroll({
@@ -41,11 +55,14 @@ export default function HomePage() {
     updateWeek: updateWeek ?? (() => {}),
     setWeekStatus: setWeekStatus ?? (() => {}),
     onWeekConsumed: prefetchPipeline.consumeWeek,
+    roadmap: roadmap.topics,
   });
 
   const handleReset = () => {
     prefetchPipeline.cancel();
     infiniteScrollState.cancel();
+    roadmap.cancel();
+    scrollVelocity.reset();
     reset();
   };
 
@@ -72,6 +89,7 @@ export default function HomePage() {
         isGeneratingNext={infiniteScrollState.isGeneratingNext}
         nextTopicPreview={infiniteScrollState.nextTopicPreview}
         onTriggerNext={infiniteScrollState.triggerNext}
+        onScrollVelocityRecord={scrollVelocity.recordView}
       />
     );
   }
