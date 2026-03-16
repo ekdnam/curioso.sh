@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
+import { geminiModel } from "@/lib/config";
 import { logger } from "@/lib/logger";
 import { timedGenerate } from "@/lib/timedGenerate";
 import { getCached, setCache } from "@/lib/cache";
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
     }
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-3-flash-preview",
+      model: geminiModel,
       systemInstruction: SYSTEM_INSTRUCTION,
       generationConfig: {
         responseMimeType: "application/json",

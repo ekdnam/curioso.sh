@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { genAI } from "@/lib/gemini";
+import { geminiModel } from "@/lib/config";
 import { logger } from "@/lib/logger";
 import { geminiRetry } from "@/lib/geminiRetry";
 import { getCached, setCache } from "@/lib/cache";
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
     }
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-3-flash-preview",
+      model: geminiModel,
       systemInstruction:
         "You are an expert curriculum designer who creates rigorous university-level course syllabi. Your task is to recommend the next logical topic in an ongoing learning path.",
       generationConfig: {

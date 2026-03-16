@@ -3,7 +3,7 @@ import { genAI } from "@/lib/gemini";
 import { logger } from "@/lib/logger";
 import { timedGenerate } from "@/lib/timedGenerate";
 import { getCached, setCache } from "@/lib/cache";
-import { deepDiveMode } from "@/lib/config";
+import { deepDiveMode, geminiModel } from "@/lib/config";
 import { Level } from "@/types/course";
 import { SchemaType, type Schema } from "@google/generative-ai";
 
@@ -145,7 +145,7 @@ export async function POST(req: NextRequest) {
 
       // Generate only the requested weeks
       const model = genAI.getGenerativeModel({
-        model: "gemini-3-flash-preview",
+        model: geminiModel,
         systemInstruction: SYSTEM_INSTRUCTION,
         generationConfig: {
           responseMimeType: "application/json",
@@ -198,7 +198,7 @@ ${CONTENT_GUIDELINES}`;
     if (allWeeks) {
       // Single-shot: generate course metadata + all 10 weeks
       const model = genAI.getGenerativeModel({
-        model: "gemini-3-flash-preview",
+        model: geminiModel,
         systemInstruction: SYSTEM_INSTRUCTION,
         generationConfig: {
           responseMimeType: "application/json",
@@ -228,7 +228,7 @@ ${CONTENT_GUIDELINES}`;
 
     // Initial call: generate course metadata + first 2 weeks
     const model = genAI.getGenerativeModel({
-      model: "gemini-3-flash-preview",
+      model: geminiModel,
       systemInstruction: SYSTEM_INSTRUCTION,
       generationConfig: {
         responseMimeType: "application/json",
