@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { Week, Reading, GlossaryEntry, DeepDive, DeepDiveSummary } from "@/types/course";
 import { DeepDiveDrawer } from "./DeepDiveDrawer";
 import { HighlightedText } from "./HighlightedText";
+import { SkeletonCard } from "./SkeletonCard";
+import { SectionHeading } from "./SectionHeading";
 import { useDeepDiveContent } from "@/hooks/useDeepDiveContent";
 import { deepDiveMode } from "@/lib/config";
 
@@ -31,10 +33,8 @@ function ReadingItem({ r }: { r: Reading }) {
 
 function DeepDiveSkeleton() {
   return (
-    <div className="rounded-xl border border-gray-100 bg-white p-4 animate-pulse">
-      <div className="h-4 bg-gray-200 rounded w-3/4 mb-3" />
-      <div className="h-3 bg-gray-100 rounded w-full mb-1.5" />
-      <div className="h-3 bg-gray-100 rounded w-5/6" />
+    <div className="animate-pulse">
+      <SkeletonCard />
     </div>
   );
 }
@@ -97,9 +97,7 @@ export const WeekCard = memo(function WeekCard({ week, prevWeek, nextWeek, isAct
             {/* Lecture notes */}
             {week.lectureNotes && (
               <section className="mb-8">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">
-                  Lecture Notes
-                </h3>
+                <SectionHeading className="mb-3">Lecture Notes</SectionHeading>
                 <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line max-w-2xl">
                   <HighlightedText text={week.lectureNotes} glossary={glossary} />
                 </div>
@@ -110,9 +108,7 @@ export const WeekCard = memo(function WeekCard({ week, prevWeek, nextWeek, isAct
 
           {/* Right sidebar — Deep Dives + Readings */}
           <div className="hidden lg:flex flex-col w-72 shrink-0 gap-3 pt-8">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">
-              Deep Dives
-            </h3>
+            <SectionHeading className="mb-1">Deep Dives</SectionHeading>
             {deepDives === null ? (
               <>
                 <DeepDiveSkeleton />
@@ -142,9 +138,7 @@ export const WeekCard = memo(function WeekCard({ week, prevWeek, nextWeek, isAct
             {/* Required Reading */}
             {week.requiredReading.length > 0 && (
               <>
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1 mt-4">
-                  Required Reading
-                </h3>
+                <SectionHeading className="mb-1 mt-4">Required Reading</SectionHeading>
                 <ul className="space-y-3">
                   {week.requiredReading.map((r, i) => (
                     <ReadingItem key={i} r={r} />

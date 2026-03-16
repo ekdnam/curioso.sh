@@ -1,6 +1,7 @@
 "use client";
 
 import { Week } from "@/types/course";
+import { SkeletonCard } from "./SkeletonCard";
 
 interface Props {
   week: Week;
@@ -96,21 +97,9 @@ export function SkeletonWeekCard({ week, prevWeek, nextWeek, isActive, cardRef, 
           {/* Right sidebar skeleton */}
           <div className="hidden lg:flex flex-col w-72 shrink-0 gap-3 pt-8 animate-pulse">
             <div className="h-3 w-20 rounded bg-gray-200 mb-1" />
-            <div className="rounded-xl border border-gray-100 bg-white p-4">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-3" />
-              <div className="h-3 bg-gray-100 rounded w-full mb-1.5" />
-              <div className="h-3 bg-gray-100 rounded w-5/6" />
-            </div>
-            <div className="rounded-xl border border-gray-100 bg-white p-4">
-              <div className="h-4 bg-gray-200 rounded w-2/3 mb-3" />
-              <div className="h-3 bg-gray-100 rounded w-full mb-1.5" />
-              <div className="h-3 bg-gray-100 rounded w-4/5" />
-            </div>
-            <div className="rounded-xl border border-gray-100 bg-white p-4">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-3" />
-              <div className="h-3 bg-gray-100 rounded w-full mb-1.5" />
-              <div className="h-3 bg-gray-100 rounded w-5/6" />
-            </div>
+            <SkeletonCard />
+            <SkeletonCard titleWidth="w-2/3" lineWidths={["w-full", "w-4/5"]} />
+            <SkeletonCard />
           </div>
         </div>
       </div>
