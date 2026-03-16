@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Infinite Tutor (Kalpana) is an AI-powered course generation app. Users enter a topic and difficulty level, and the system generates a 10-week university-level curriculum with lecture notes, readings, deep dives, and glossaries using Google's Gemini API.
+Kalpana is an AI-powered course generation app. Users enter a topic and difficulty level, and the system generates a 10-week university-level curriculum with lecture notes, readings, deep dives, and glossaries using Google's Gemini API.
 
 ## Commands
 

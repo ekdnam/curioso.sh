@@ -17,7 +17,7 @@ An AI-powered course generator that creates university-level curricula on any to
 - **React 19** / **Next.js 16** (App Router)
 - **Tailwind CSS 4**
 - **Framer Motion** for animations
-- **Google Gemini** (`gemini-2.5-flash-preview`) for all AI generation
+- **Google Gemini** (`gemini-3-flash-preview`) for all AI generation
 - **TypeScript** with strict mode
 
 ## Getting Started
