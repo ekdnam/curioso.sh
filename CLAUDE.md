@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Kalpana is an AI-powered course generation app. Users enter a topic and difficulty level, and the system generates a 10-week university-level curriculum with lecture notes, readings, deep dives, and glossaries using Google's Gemini API.
+curioso.sh is an AI-powered course generation app. Users enter a topic and difficulty level, and the system generates a 10-week university-level curriculum with lecture notes, readings, deep dives, and glossaries using Google's Gemini API.
 
 ## Commands
 
@@ -36,7 +36,7 @@ All routes are POST endpoints that call Google Gemini (`gemini-3-flash-preview`)
 
 ### Client Orchestration (`hooks/`)
 
-`useGenerateCourse` is the main orchestration hook. It drives the full pipeline: prefilter → generate course (chunked or single-shot) → fetch glossaries (staggered) → fetch deep dive summaries. Course state persists to localStorage under key `"infinite-tutor:course"`.
+`useGenerateCourse` is the main orchestration hook. It drives the full pipeline: prefilter → generate course (chunked or single-shot) → fetch glossaries (staggered) → fetch deep dive summaries. Course state persists to localStorage under key `"curioso:course"`.
 
 ### Feature Flags (`lib/config.ts`)
 

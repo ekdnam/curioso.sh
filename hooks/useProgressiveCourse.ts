@@ -6,8 +6,8 @@ import { logger } from "@/lib/logger";
 import { prefetchAhead } from "@/lib/config";
 import { fetchGlossaryForWeek, collectKnownTerms } from "@/lib/fetchGlossary";
 
-const STORAGE_KEY = "infinite-tutor:course";
-const WEEK_STATUS_KEY = "infinite-tutor:week-status";
+const STORAGE_KEY = "curioso:course";
+const WEEK_STATUS_KEY = "curioso:week-status";
 
 type WeekStatus = WeekStatusType;
 

@@ -6,7 +6,7 @@ import { roadmapBatchSize, roadmapRefetchThreshold } from "@/lib/config";
 import { logger } from "@/lib/logger";
 import type { WeekStatusType } from "@/hooks/useProgressiveCourse";
 
-const STORAGE_KEY = "infinite-tutor:roadmap";
+const STORAGE_KEY = "curioso:roadmap";
 
 interface UseRoadmapOptions {
   enabled: boolean;

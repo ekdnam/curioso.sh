@@ -24,7 +24,7 @@ export function CourseForm({ onSubmit }: Props) {
       <div className="w-full max-w-lg space-y-8">
         {/* Header */}
         <div className="space-y-2">
-          <p className="text-blue-600 text-sm font-medium">Kalpana</p>
+          <p className="text-blue-600 text-sm font-medium">curioso.sh</p>
           <h1 className="text-3xl font-bold text-gray-900">
             What do you want to learn?
           </h1>

@@ -1,6 +1,6 @@
-# Infinite Tutor
+# curioso.sh
 
-An AI-powered course generator that creates university-level curricula on any topic. Enter a subject and difficulty level, and Infinite Tutor produces a full 10-week course with lecture notes, readings, glossaries, and deep dives — then keeps generating more as you scroll.
+An AI-powered course generator that creates university-level curricula on any topic. Enter a subject and difficulty level, and curioso.sh produces a full 10-week course with lecture notes, readings, glossaries, and deep dives — then keeps generating more as you scroll.
 
 ## Features
 
@@ -30,8 +30,8 @@ An AI-powered course generator that creates university-level curricula on any to
 ### Setup
 
 ```bash
-git clone https://github.com/ekdnam/infinite-tutor.git
-cd infinite-tutor
+git clone https://github.com/ekdnam/curioso.sh.git
+cd curioso.sh
 npm install
 ```
 

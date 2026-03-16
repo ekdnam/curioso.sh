@@ -7,7 +7,7 @@ import { parseCourse } from "@/lib/parseCourse";
 import { singleShotCourse } from "@/lib/config";
 import { collectKnownTerms } from "@/lib/fetchGlossary";
 
-const STORAGE_KEY = "infinite-tutor:course";
+const STORAGE_KEY = "curioso:course";
 
 function saveCourse(course: Course) {
   try {
