@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: RECOMMEND_SCHEMA,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 2048,
       },
     });
 
@@ -87,7 +87,12 @@ Return:
     const parsed = await geminiRetry("recommend-next-topic", async () => {
       const result = await model.generateContent(prompt);
       const text = result.response.text();
-      return JSON.parse(text);
+      try {
+        return JSON.parse(text);
+      } catch (parseErr) {
+        logger.error("recommend-next-topic", `Malformed JSON from Gemini (${text.length} chars): ${text.slice(0, 500)}`);
+        throw parseErr;
+      }
     });
 
     setCache("recommend", topic, cacheKey, parsed);

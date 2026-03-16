@@ -25,10 +25,11 @@ const GLOSSARY_SCHEMA: Schema = {
 
 export async function POST(req: NextRequest) {
   try {
-    const { lectureNotes, weekNumber, topic } = (await req.json()) as {
+    const { lectureNotes, weekNumber, topic, knownTerms } = (await req.json()) as {
       lectureNotes: string;
       weekNumber?: number;
       topic?: string;
+      knownTerms?: string[];
     };
 
     logger.info("generate-glossary", `Request received — week=${weekNumber ?? "?"}, lectureNotes length=${lectureNotes?.length ?? 0}`);
@@ -61,7 +62,7 @@ export async function POST(req: NextRequest) {
 
 Only include:
 - Technical terms, concepts, and domain-specific jargon
-- Named architectures, algorithms, protocols, and data structures
+- Terms like protocols, molecules, architectures, data structures, historical entities a layman would not know. This is important
 - Acronyms and abbreviations with technical meaning
 
 Do NOT include:
@@ -69,6 +70,7 @@ Do NOT include:
 - Common English words or general nouns
 - People's names
 - Terms that any educated adult would know
+${knownTerms?.length ? `- Any of these already-defined terms: ${knownTerms.join(", ")}` : ""}
 
 Lecture notes:
 ${lectureNotes}`;
